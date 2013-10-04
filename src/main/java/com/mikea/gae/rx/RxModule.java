@@ -7,6 +7,7 @@ import com.google.inject.servlet.ServletModule;
  */
 public class RxModule extends ServletModule {
     public static final String RX_URL_BASE = "/_rx";
+    public static final String RX_CRON_URL_BASE = RxModule.RX_URL_BASE + "/cron/";
 
     @Override
     protected void configureServlets() {

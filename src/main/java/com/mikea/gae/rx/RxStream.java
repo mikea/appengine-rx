@@ -1,6 +1,7 @@
 package com.mikea.gae.rx;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.inject.Inject;
 
 /**
@@ -15,8 +16,13 @@ public abstract class RxStream<EventType> implements IObservable<EventType> {
     }
 
     public final <NewEventType> RxStream<NewEventType> transform(
-            Class<? extends Function<EventType, NewEventType>> processFeedsClass) {
-        return wrap(Observables.transform(this, processFeedsClass, rx.getInjector()));
+            Class<? extends Function<EventType, NewEventType>> fnClass) {
+        return wrap(Observables.transform(this, fnClass, rx.getInjector()));
+    }
+
+    public final <NewEventType> RxStream<NewEventType> transform(
+            Function<EventType, NewEventType> fn) {
+        return wrap(Observables.transform(this, fn));
     }
 
     public void apply(Class<? extends IAction<EventType>> actionClass) {
@@ -25,5 +31,9 @@ public abstract class RxStream<EventType> implements IObservable<EventType> {
 
     private <T> RxStream<T> wrap(IObservable<T> src) {
         return RxObservableWrapper.wrap(rx, src);
+    }
+
+    public RxStream<EventType> filter(Predicate<EventType> predicate) {
+        return wrap(Observables.filter(this, predicate));
     }
 }

@@ -1,20 +1,21 @@
 package com.mikea.gae.rx;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.HashSet;
 import java.util.Set;
 
 @Singleton
 class RxImpl implements Rx {
     private final Set<RxPipeline> pipelines;
     private final Injector injector;
-    private final Set<RxHandler> handlers = new HashSet<>();
     private boolean initialized;
+    private RxPushStream<RxHttpRequest> requestsStream = new RxPushStream<>(this);
 
     @Inject
     RxImpl(Set<RxPipeline> pipelines, Injector injector) {
@@ -22,17 +23,31 @@ class RxImpl implements Rx {
         this.injector = injector;
     }
 
-    private void init() {
+    static String getUrl(String cronSpecification) {
+        return RxModule.RX_CRON_URL_BASE + cronSpecification.replaceAll(" ", "_");
+    }
+
+    private synchronized void initIfNeeded() {
+        if (initialized) return;
+        initialized = true;
         for (RxPipeline pipeline : pipelines) {
             pipeline.init(this);
         }
     }
 
     @Override
-    public RxStream<RxCronEvent> cron(String specification) {
-        RxCronHandler handler = new RxCronHandler(this, specification);
-        handlers.add(handler);
-        return handler.getStream();
+    public RxStream<RxCronEvent> cron(final String specification) {
+        return requests().filter(new Predicate<RxHttpRequest>() {
+            @Override
+            public boolean apply(RxHttpRequest input) {
+                return input.request.getRequestURI().equals(getUrl(specification));
+            }
+        }).transform(new Function<RxHttpRequest, RxCronEvent>() {
+            @Override
+            public RxCronEvent apply(RxHttpRequest input) {
+                return new RxCronEvent();
+            }
+        });
     }
 
     @Override
@@ -42,19 +57,10 @@ class RxImpl implements Rx {
 
     public void handleRequest(HttpServletRequest request, HttpServletResponse response) {
         initIfNeeded();
-
-        for (RxHandler handler : handlers) {
-            if (handler.handleRequest(request, response)) {
-                return;
-            }
-        }
-
-        throw new IllegalStateException("Handler not found");
+        requestsStream.onNext(new RxHttpRequest(this, request, response));
     }
 
-    private synchronized void initIfNeeded() {
-        if (initialized) return;
-        initialized = true;
-        init();
+    public RxStream<RxHttpRequest> requests() {
+        return requestsStream;
     }
 }

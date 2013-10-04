@@ -1,6 +1,7 @@
 package com.mikea.gae.rx;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.inject.Injector;
 
 /**
@@ -12,24 +13,24 @@ class Observables {
         return transform(src, injector.getInstance(functionClass));
     }
 
-    private static <T, S> IObservable<T> transform(final IObservable<S> src, Function<S, T> f) {
+    public static <T, S> IObservable<T> transform(final IObservable<S> src, final Function<S, T> f) {
         return new IObservable<T>() {
             @Override
-            public IDisposable subscribe(IObserver<T> observer) {
+            public IDisposable subscribe(final IObserver<T> observer) {
                 return src.subscribe(new IObserver<S>() {
                     @Override
                     public void onCompleted() {
-                        throw new UnsupportedOperationException();
+                        observer.onCompleted();
                     }
 
                     @Override
                     public void onError(Exception e) {
-                        throw new UnsupportedOperationException();
+                        observer.onError(e);
                     }
 
                     @Override
                     public void onNext(S value) {
-                        throw new UnsupportedOperationException();
+                        observer.onNext(f.apply(value));
                     }
                 });
             }
@@ -42,5 +43,31 @@ class Observables {
 
     private static <T> void apply(IObservable<T> src, IAction<T> action) {
         src.subscribe(Observers.asObserver(action));
+    }
+
+    public static <T> IObservable<T> filter(final IObservable<T> src, final Predicate<T> predicate) {
+        return new IObservable<T>() {
+            @Override
+            public IDisposable subscribe(final IObserver<T> observer) {
+                return src.subscribe(new IObserver<T>() {
+                    @Override
+                    public void onCompleted() {
+                        observer.onCompleted();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        observer.onError(e);
+                    }
+
+                    @Override
+                    public void onNext(T value) {
+                        if (predicate.apply(value)) {
+                            observer.onNext(value);
+                        }
+                    }
+                });
+            }
+        };
     }
 }

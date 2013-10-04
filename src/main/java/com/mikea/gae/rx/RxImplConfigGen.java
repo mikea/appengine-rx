@@ -33,7 +33,7 @@ class RxImplConfigGen implements Rx {
         for (String cronSpecification : cronSpecifications) {
             System.out.println(
                     "    <cron>\n" +
-                            "        <url>" + RxCronHandler.getUrl(cronSpecification) + "</url>\n" +
+                            "        <url>" + RxImpl.getUrl(cronSpecification) + "</url>\n" +
                             "        <schedule>" + cronSpecification + "</schedule>\n" +
                             "    </cron>");
         }

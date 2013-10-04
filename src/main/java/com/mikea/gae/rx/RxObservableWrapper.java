@@ -17,6 +17,6 @@ class RxObservableWrapper<T> extends RxStream<T> {
 
     @Override
     public IDisposable subscribe(IObserver<T> observer) {
-        throw new UnsupportedOperationException();
+        return observable.subscribe(observer);
     }
 }
