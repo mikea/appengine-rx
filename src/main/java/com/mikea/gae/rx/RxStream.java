@@ -29,7 +29,11 @@ public abstract class RxStream<T> implements IObservable<T> {
         Observables.apply(this, actionClass, rx.getInjector());
     }
 
-    private <T> RxStream<T> wrap(IObservable<T> src) {
+    public final RxStream<T> apply(IAction<T> action) {
+        return RxObservableWrapper.wrap(rx, Observables.apply(this, action));
+    }
+
+    <T> RxStream<T> wrap(IObservable<T> src) {
         return RxObservableWrapper.wrap(rx, src);
     }
 

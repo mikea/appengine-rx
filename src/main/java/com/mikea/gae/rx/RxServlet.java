@@ -2,14 +2,12 @@ package com.mikea.gae.rx;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.mikea.util.Loggers;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 @Singleton
 class RxServlet extends HttpServlet {
@@ -30,7 +28,7 @@ class RxServlet extends HttpServlet {
         handleRequest(req, resp);
     }
 
-    private void handleRequest(HttpServletRequest request, HttpServletResponse response) {
+    private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         rx.handleRequest(request, response);
     }
 }

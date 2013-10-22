@@ -1,5 +1,6 @@
 package com.mikea.gae.rx;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +11,7 @@ public class RxPushStream<T> extends RxStream<T> {
         super(rx);
     }
 
-    public synchronized void onNext(T t) {
+    public synchronized void onNext(T t) throws IOException {
         for (IObserver<T> observer : observers) {
             observer.onNext(t);
         }
