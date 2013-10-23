@@ -47,6 +47,10 @@ public class RxTask<T extends Serializable> {
         }
     }
 
+    public T getPayload() {
+        return payload;
+    }
+
     public static class Builder<T extends Serializable> {
         private T payload;
 
