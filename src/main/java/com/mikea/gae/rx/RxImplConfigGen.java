@@ -3,6 +3,8 @@ package com.mikea.gae.rx;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.mikea.gae.rx.base.IDisposable;
+import com.mikea.gae.rx.base.IObserver;
 
 import java.io.IOException;
 import java.io.Serializable;

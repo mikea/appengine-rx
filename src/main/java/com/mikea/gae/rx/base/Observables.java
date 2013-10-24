@@ -1,4 +1,4 @@
-package com.mikea.gae.rx;
+package com.mikea.gae.rx.base;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -11,7 +11,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * @author mike.aizatsky@gmail.com
  */
-final class Observables {
+public final class Observables {
 
     private Observables() { }
 

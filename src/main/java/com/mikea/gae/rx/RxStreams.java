@@ -1,5 +1,7 @@
 package com.mikea.gae.rx;
 
+import com.mikea.gae.rx.base.Observables;
+
 /**
  * @author mike.aizatsky@gmail.com
  */

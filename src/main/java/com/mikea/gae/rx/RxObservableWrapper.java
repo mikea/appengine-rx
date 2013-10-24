@@ -1,5 +1,9 @@
 package com.mikea.gae.rx;
 
+import com.mikea.gae.rx.base.IDisposable;
+import com.mikea.gae.rx.base.IObservable;
+import com.mikea.gae.rx.base.IObserver;
+
 /**
  * @author mike.aizatsky@gmail.com
  */

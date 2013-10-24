@@ -1,5 +1,8 @@
 package com.mikea.gae.rx;
 
+import com.mikea.gae.rx.base.IDisposable;
+import com.mikea.gae.rx.base.IObserver;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

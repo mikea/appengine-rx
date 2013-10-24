@@ -2,6 +2,7 @@ package com.mikea.gae.rx;
 
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Injector;
+import com.mikea.gae.rx.base.IObserver;
 
 import java.io.Serializable;
 

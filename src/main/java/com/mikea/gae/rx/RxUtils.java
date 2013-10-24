@@ -1,5 +1,7 @@
 package com.mikea.gae.rx;
 
+import com.mikea.gae.rx.base.IObserver;
+
 import java.io.IOException;
 
 /**
