@@ -1,5 +1,6 @@
 package com.mikea.gae.rx;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +46,15 @@ public class RxTask<T extends Serializable> {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static <T extends Serializable> Function<RxTask<T>, T> getPayloadFn() {
+        return new Function<RxTask<T>, T>() {
+            @Override
+            public T apply(RxTask<T> task) {
+                return task.getPayload();
+            }
+        };
     }
 
     public T getPayload() {

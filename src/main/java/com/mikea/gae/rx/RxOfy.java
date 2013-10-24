@@ -2,9 +2,10 @@ package com.mikea.gae.rx;
 
 import com.google.common.base.Function;
 import com.googlecode.objectify.Key;
-import com.mikea.gae.rx.base.IAction;
+import com.googlecode.objectify.Result;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
@@ -14,11 +15,11 @@ import static com.googlecode.objectify.ObjectifyService.ofy;
 public class RxOfy {
     private RxOfy() { }
 
-    public static <T> IAction<T> save() {
-        return new IAction<T>() {
+    public static <T> Function<T, Result<Key<T>>> save() {
+        return new Function<T, Result<Key<T>>>() {
             @Override
-            public void perform(T t) {
-                ofy().save().entity(t);
+            public Result<Key<T>> apply(T input) {
+                return ofy().save().entity(input);
             }
         };
     }
@@ -29,6 +30,15 @@ public class RxOfy {
             @Override
             public T apply(@Nullable Key<T> input) {
                 return ofy().load().key(input).safe();
+            }
+        };
+    }
+
+    public static <T> Function<Iterable<T>, Result<Map<Key<T>, T>>> saveMulti() {
+        return new Function<Iterable<T>, Result<Map<Key<T>, T>>>() {
+            @Override
+            public Result<Map<Key<T>, T>> apply(@Nullable Iterable<T> values) {
+                return ofy().save().entities(values);
             }
         };
     }

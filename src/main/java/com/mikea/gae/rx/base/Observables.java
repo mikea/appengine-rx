@@ -20,27 +20,12 @@ public final class Observables {
     }
 
     public static <T, S> IObservable<T> transform(final IObservable<S> src, final Function<S, T> f) {
-        return new IObservable<T>() {
+        return transform(src, new DoFn<S, T>() {
             @Override
-            public IDisposable subscribe(final IObserver<T> observer) {
-                return src.subscribe(new IObserver<S>() {
-                    @Override
-                    public void onCompleted() {
-                        observer.onCompleted();
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        observer.onError(e);
-                    }
-
-                    @Override
-                    public void onNext(S value) throws IOException {
-                        observer.onNext(checkNotNull(f.apply(value)));
-                    }
-                });
+            public void process(S s, EmitFn<T> emitFn) throws IOException {
+                emitFn.emit(f.apply(s));
             }
-        };
+        });
     }
 
     public static <T> void apply(IObservable<T> src, Class<? extends IAction<T>> actionClass, Injector injector) {
@@ -133,6 +118,35 @@ public final class Observables {
                         for (U u : checkNotNull(fn.apply(value))) {
                             observer.onNext(u);
                         }
+                    }
+                });
+            }
+        };
+    }
+
+    public static <T, U> IObservable<U> transform(final IObservable<T> src, final DoFn<T, U> fn) {
+        return new IObservable<U>() {
+            @Override
+            public IDisposable subscribe(final IObserver<U> observer) {
+                return src.subscribe(new IObserver<T>() {
+                    @Override
+                    public void onCompleted() {
+                        observer.onCompleted();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        observer.onError(e);
+                    }
+
+                    @Override
+                    public void onNext(T value) throws IOException {
+                        fn.process(value, new EmitFn<U>() {
+                            @Override
+                            public void emit(U u) throws IOException {
+                                observer.onNext(u);
+                            }
+                        });
                     }
                 });
             }

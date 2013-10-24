@@ -3,6 +3,7 @@ package com.mikea.gae.rx;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.inject.Inject;
+import com.mikea.gae.rx.base.DoFn;
 import com.mikea.gae.rx.base.IAction;
 import com.mikea.gae.rx.base.IObservable;
 import com.mikea.gae.rx.base.IObserver;
@@ -27,6 +28,11 @@ public abstract class RxStream<T> implements IObservable<T> {
 
     public final <NewEventType> RxStream<NewEventType> transform(
             Function<T, NewEventType> fn) {
+        return wrap(Observables.transform(this, fn));
+    }
+
+    public final <NewEventType> RxStream<NewEventType> transform(
+            DoFn<T, NewEventType> fn) {
         return wrap(Observables.transform(this, fn));
     }
 
