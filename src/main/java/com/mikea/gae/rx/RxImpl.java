@@ -5,13 +5,17 @@ import com.google.common.base.Predicate;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
+import com.mikea.util.Loggers;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Set;
+import java.util.logging.Logger;
 
 @Singleton
 class RxImpl implements Rx {
+    private static Logger log = Loggers.getContextLogger();
+
     private final Set<RxPipeline> pipelines;
     private final Injector injector;
     private boolean initialized;
@@ -62,5 +66,9 @@ class RxImpl implements Rx {
 
     public RxStream<RxHttpRequest> requests() {
         return requestsStream;
+    }
+
+    public void onContextInitialized() {
+        log.fine("onContextInitialized");
     }
 }

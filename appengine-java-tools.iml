@@ -12,7 +12,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="appengine-api-1.0-sdk-1.8.5" level="project" />
     <orderEntry type="library" exported="" name="guice-3.0" level="project" />
     <orderEntry type="library" exported="" name="guice-servlet-3.0" level="project" />
     <orderEntry type="library" exported="" name="guava-15.0" level="project" />
@@ -21,6 +20,7 @@
     <orderEntry type="library" exported="" name="aopalliance-1.0" level="project" />
     <orderEntry type="library" exported="" name="asm-3.1" level="project" />
     <orderEntry type="library" exported="" name="cglib-2.2.1-v20090111" level="project" />
+    <orderEntry type="library" exported="" name="appengine-api-1.0-sdk-1.8.6" level="project" />
   </component>
 </module>
 

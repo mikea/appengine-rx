@@ -13,5 +13,6 @@ public class RxModule extends ServletModule {
     protected void configureServlets() {
         super.configureServlets();
         serve(RX_URL_BASE + "*").with(RxServlet.class);
+        bind(Rx.class).to(RxImpl.class);
     }
 }
