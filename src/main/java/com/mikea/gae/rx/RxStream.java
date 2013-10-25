@@ -3,6 +3,12 @@ package com.mikea.gae.rx;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.inject.Inject;
+import com.mikea.gae.rx.base.DoFn;
+import com.mikea.gae.rx.base.IAction;
+import com.mikea.gae.rx.base.IObservable;
+import com.mikea.gae.rx.base.IObserver;
+import com.mikea.gae.rx.base.Observables;
+import com.mikea.gae.rx.base.Observers;
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -25,11 +31,20 @@ public abstract class RxStream<T> implements IObservable<T> {
         return wrap(Observables.transform(this, fn));
     }
 
+    public final <NewEventType> RxStream<NewEventType> transform(
+            DoFn<T, NewEventType> fn) {
+        return wrap(Observables.transform(this, fn));
+    }
+
     public final void apply(Class<? extends IAction<T>> actionClass) {
         Observables.apply(this, actionClass, rx.getInjector());
     }
 
-    private <T> RxStream<T> wrap(IObservable<T> src) {
+    public final RxStream<T> apply(IAction<T> action) {
+        return RxObservableWrapper.wrap(rx, Observables.apply(this, action));
+    }
+
+    <T> RxStream<T> wrap(IObservable<T> src) {
         return RxObservableWrapper.wrap(rx, src);
     }
 
@@ -39,6 +54,10 @@ public abstract class RxStream<T> implements IObservable<T> {
 
     public final void sink(IObserver<T> sink) {
         Observables.sink(this, sink);
+    }
+
+    public final void sink(IAction<T> sink) {
+        Observables.sink(this, Observers.asObserver(sink));
     }
 
     public final <U> RxStream<U> transformMany(Class<? extends Function<T, Iterable<U>>> fnClass) {

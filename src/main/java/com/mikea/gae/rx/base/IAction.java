@@ -1,4 +1,4 @@
-package com.mikea.gae.rx;
+package com.mikea.gae.rx.base;
 
 /**
  * @author mike.aizatsky@gmail.com

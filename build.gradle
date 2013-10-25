@@ -10,4 +10,6 @@ dependencies {
     compile 'com.google.inject.extensions:guice-servlet:3.0'
     compile "com.google.guava:guava:$guavaVersion"
     compile 'javax.servlet:servlet-api:2.5'
+    compile 'com.google.code.findbugs:jsr305:2.0.2'
+    compile 'com.googlecode.objectify:objectify:4.0rc1'
 }
