@@ -8,6 +8,8 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
+import com.mikea.gae.rx.base.DoFn;
+import com.mikea.gae.rx.base.EmitFn;
 import com.mikea.gae.rx.base.IObserver;
 import com.mikea.util.Loggers;
 
@@ -31,6 +33,7 @@ class RxImpl implements Rx {
     private final BlobstoreService blobstoreService;
     private boolean initialized;
     private RxPushStream<RxHttpRequestEvent> requestsStream = new RxPushStream<>(this);
+    private RxPushStream<RxInitializationEvent> initializationStream = new RxPushStream<>(this);
 
     @Inject
     RxImpl(Set<RxPipeline> pipelines,
@@ -139,6 +142,26 @@ class RxImpl implements Rx {
         });
     }
 
+    @Override
+    public RxStream<RxVersionUpdateEvent> updates() {
+        return initialized().transform(new DoFn<RxInitializationEvent, RxVersionUpdateEvent>() {
+            @Override
+            public void process(RxInitializationEvent rxInitializationEvent, EmitFn<RxVersionUpdateEvent> emitFn) throws IOException {
+                log.info("Checking version...");
+                log.info(System.getProperties().toString());
+            }
+        });
+    }
+
+    @Override
+    public RxStream<RxInitializationEvent> initialized() {
+        return initializationStream;
+    }
+
+
+    public RxStream<RxHttpRequestEvent> requests() {
+        return requestsStream;
+    }
 
     public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         initIfNeeded();
@@ -152,11 +175,9 @@ class RxImpl implements Rx {
         }
     }
 
-    public RxStream<RxHttpRequestEvent> requests() {
-        return requestsStream;
-    }
-
-    public void onContextInitialized() {
+    public void onContextInitialized() throws IOException {
+        initIfNeeded();
         log.fine("onContextInitialized");
+        initializationStream.onNext(new RxInitializationEvent());
     }
 }

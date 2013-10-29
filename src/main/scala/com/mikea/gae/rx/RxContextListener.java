@@ -5,6 +5,7 @@ import com.google.inject.servlet.GuiceServletContextListener;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
+import java.io.IOException;
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -17,6 +18,10 @@ public abstract class RxContextListener extends GuiceServletContextListener {
         Injector injector = (Injector) servletContext.getAttribute(Injector.class.getName());
 
         RxImpl rx = (RxImpl) injector.getInstance(Rx.class);
-        rx.onContextInitialized();
+        try {
+            rx.onContextInitialized();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

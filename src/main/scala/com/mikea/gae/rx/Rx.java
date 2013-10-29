@@ -20,4 +20,7 @@ public interface Rx {
 
     <T extends Serializable> RxStream<RxTask<T>> tasks(String queueName, Class<T> payloadClass);
     <T extends Serializable> RxStream<RxTask<T>> tasks(String queueName, TypeToken<T> typeToken);
+
+    RxStream<RxVersionUpdateEvent> updates();
+    RxStream<RxInitializationEvent> initialized();
 }

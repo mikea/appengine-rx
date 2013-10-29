@@ -69,6 +69,16 @@ class RxImplConfigGen implements Rx {
         return new RxConfigGenStream<>(this);
     }
 
+    @Override
+    public RxStream<RxVersionUpdateEvent> updates() {
+        return new RxConfigGenStream<>(this);
+    }
+
+    @Override
+    public RxStream<RxInitializationEvent> initialized() {
+        return new RxConfigGenStream<>(this);
+    }
+
     public void generateConfigs() {
         System.out.println("----- cron.xml -----");
         System.out.println(

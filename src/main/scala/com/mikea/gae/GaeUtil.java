@@ -6,4 +6,8 @@ public class GaeUtil {
     public static boolean isDevMode() {
         return SystemProperty.environment.value().equals(SystemProperty.Environment.Value.Development);
     }
+
+    public static String getApplicationVersion() {
+        return SystemProperty.applicationVersion.get();
+    }
 }
