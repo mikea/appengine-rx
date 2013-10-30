@@ -47,7 +47,7 @@ import scala.collection.mutable
   def cron(specification: String): IObservable[RxCronEvent] = {
     requests
       .filter((evt: RxHttpRequestEvent) => evt.request.getRequestURI == RxImpl.getCronUrl(specification))
-      .transform((evt: RxHttpRequestEvent) => new RxCronEvent)
+      .map((evt: RxHttpRequestEvent) => new RxCronEvent)
   }
 
   def injector() = _injector
@@ -55,7 +55,7 @@ import scala.collection.mutable
   def upload(): IObservable[RxUploadEvent] = {
     requests
       .filter((evt: RxHttpRequestEvent) => evt.request.getRequestURI == RxImpl.getUploadsUrl)
-      .transform((event: RxHttpRequestEvent) => {
+      .map((event: RxHttpRequestEvent) => {
       val javaMap: util.Map[String, util.List[BlobInfo]] = _blobstoreService.getBlobInfos(event.request)
 
       import scala.collection.JavaConverters._
@@ -79,7 +79,7 @@ import scala.collection.mutable
       val requestQueueName: String = request.getHeader("X-AppEngine-QueueName")
       Objects.equals(requestQueueName, queueName)
     })
-      .transform((event: RxHttpRequestEvent) => {
+      .map((event: RxHttpRequestEvent) => {
       try {
         event.sendOk()
         RxTask.fromRequest(event.request)
@@ -93,7 +93,7 @@ import scala.collection.mutable
   }
 
   def appVersionUpdate(): IObservable[RxVersionUpdateEvent] = {
-    contextInitialized().transform(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
+    contextInitialized().map(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
       def process(rxInitializationEvent: RxInitializationEvent, emitFn: (RxVersionUpdateEvent) => Unit): Unit = {
         val applicationVersion: String = GaeUtil.getApplicationVersion
         RxImpl.log.info("Checking version " + applicationVersion)

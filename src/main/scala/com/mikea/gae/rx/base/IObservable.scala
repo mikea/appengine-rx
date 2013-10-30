@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions._
 object IObservable {
   @deprecated
   def flatten[T](src: IObservable[Iterable[T]]): IObservable[T] = {
-    src.transform(new DoFn[Iterable[T], T] {
+    src.map(new DoFn[Iterable[T], T] {
       def process(values: Iterable[T], emitFn: (T) => Unit) = {
         for (t <- values) {
           emitFn(t)
@@ -20,15 +20,15 @@ trait IObservable[T] {
 
   def instantiate[C](aClass : Class[C]) : C
 
-  def transform[U](f: (T) => U): IObservable[U] = {
-    transform(new DoFn[T, U] {
+  def map[U](f: (T) => U): IObservable[U] = {
+    map(new DoFn[T, U] {
       def process(t: T, emitFn: (U) => Unit): Unit = {
         emitFn(f.apply(t))
       }
     })
   }
 
-  def transform[U](fn: DoFn[T, U]): IObservable[U] = {
+  def map[U](fn: DoFn[T, U]): IObservable[U] = {
     val src = this
     new IObservable[U] {
       def subscribe(observer: IObserver[U]): IDisposable = {
@@ -51,8 +51,8 @@ trait IObservable[T] {
     }
   }
 
-  def transformMany[U](fn: (T) => Iterable[U]): IObservable[U] = {
-    transform(new DoFn[T, U] {
+  def mapMany[U](fn: (T) => Iterable[U]): IObservable[U] = {
+    map(new DoFn[T, U] {
       def process(value: T, emitFn: (U) => Unit) = {
         for (u <- checkNotNull(fn.apply(value))) {
           emitFn(u)
@@ -60,6 +60,9 @@ trait IObservable[T] {
       }
     })
   }
+
+  def mapMany[U](fnClass: Class[_ <: (T) => Iterable[U]]): IObservable[U] = mapMany(instantiate(fnClass))
+
 
   def sink(sink: IObserver[T]): IObservable[T] = {
     this.subscribe(sink)
@@ -70,7 +73,7 @@ trait IObservable[T] {
   def apply(actionClass: Class[_ <: (T) => Unit]): IObservable[T] = apply(instantiate(actionClass))
 
   def filter(predicate: (T) => Boolean): IObservable[T] = {
-    transform(new DoFn[T, T] {
+    map(new DoFn[T, T] {
       def process(value: T, emitFn: (T) => Unit) = {
         if (predicate.apply(value)) {
           emitFn(value)
@@ -78,6 +81,4 @@ trait IObservable[T] {
       }
     })
   }
-
-  def transformMany[U](fnClass: Class[_ <: (T) => Iterable[U]]): IObservable[U] = transformMany(instantiate(fnClass))
 }
