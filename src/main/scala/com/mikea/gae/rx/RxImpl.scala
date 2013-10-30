@@ -52,7 +52,7 @@ import scala.collection.mutable
 
   def injector() = _injector
 
-  def uploads(): IObservable[RxUploadEvent] = {
+  def upload(): IObservable[RxUploadEvent] = {
     requests
       .filter((evt: RxHttpRequestEvent) => evt.request.getRequestURI == RxImpl.getUploadsUrl)
       .transform((event: RxHttpRequestEvent) => {
@@ -92,7 +92,7 @@ import scala.collection.mutable
     })
   }
 
-  def updates(): IObservable[RxVersionUpdateEvent] = {
+  def appVersionUpdate(): IObservable[RxVersionUpdateEvent] = {
     contextInitialized().transform(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
       def process(rxInitializationEvent: RxInitializationEvent, emitFn: (RxVersionUpdateEvent) => Unit): Unit = {
         val applicationVersion: String = GaeUtil.getApplicationVersion

@@ -26,7 +26,7 @@ class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
 
   def injector = _injector
 
-  def uploads: IObservable[RxUploadEvent] = {
+  def upload: IObservable[RxUploadEvent] = {
     new RxImplConfigGen.RxConfigGenStream[RxUploadEvent](this.injector)
   }
 
@@ -55,7 +55,7 @@ class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
     new RxImplConfigGen.RxConfigGenStream[RxTask[T]](this.injector)
   }
 
-  def updates: IObservable[RxVersionUpdateEvent] = {
+  def appVersionUpdate: IObservable[RxVersionUpdateEvent] = {
     new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this.injector)
   }
 
