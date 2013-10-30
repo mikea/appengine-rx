@@ -3,29 +3,31 @@ package com.mikea.gae.rx
 import com.google.common.reflect.TypeToken
 import com.google.inject.Inject
 import com.google.inject.Injector
-import com.mikea.gae.rx.base.IObserver
+import com.mikea.gae.rx.base.{IObservable, IObserver}
 import java.io.Serializable
 import com.mikea.gae.rx.RxImplConfigGen.RxConfigGenStream
 import scala.collection.immutable.HashSet
 
 object RxImplConfigGen {
-  class RxConfigGenStream[T] (rx: Rx) extends RxStream[T](rx, rx.getInjector) {
+  class RxConfigGenStream[T] (_injector: Injector) extends IObservable[T] {
     def subscribe(observer: IObserver[T]) = {
       throw new UnsupportedOperationException()
     }
+
+    def instantiate[C](aClass: Class[C]) = _injector.getInstance(aClass)
   }
 }
 
-class RxImplConfigGen @Inject() (injector: Injector) extends Rx {
-  def cron(specification: String): RxStream[RxCronEvent] = {
+class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
+  def cron(specification: String): IObservable[RxCronEvent] = {
     cronSpecifications += specification
-    new RxConfigGenStream[RxCronEvent](this)
+    new RxConfigGenStream[RxCronEvent](this.injector)
   }
 
-  def getInjector: Injector = { injector }
+  def injector = _injector
 
-  def uploads: RxStream[RxUploadEvent] = {
-    new RxImplConfigGen.RxConfigGenStream[RxUploadEvent](this)
+  def uploads: IObservable[RxUploadEvent] = {
+    new RxImplConfigGen.RxConfigGenStream[RxUploadEvent](this.injector)
   }
 
   def taskqueue[T <: Serializable](queueName: String): IObserver[RxTask[T]] = {
@@ -45,20 +47,20 @@ class RxImplConfigGen @Inject() (injector: Injector) extends Rx {
     }
   }
 
-  def tasks[T <: Serializable](uploads: String, payloadClass: Class[T]): RxStream[RxTask[T]] = {
-    new RxImplConfigGen.RxConfigGenStream[RxTask[T]](this)
+  def tasks[T <: Serializable](uploads: String, payloadClass: Class[T]): IObservable[RxTask[T]] = {
+    new RxImplConfigGen.RxConfigGenStream[RxTask[T]](this.injector)
   }
 
-  def tasks[T <: Serializable](queueName: String, typeToken: TypeToken[T]): RxStream[RxTask[T]] = {
-    new RxImplConfigGen.RxConfigGenStream[RxTask[T]](this)
+  def tasks[T <: Serializable](queueName: String, typeToken: TypeToken[T]): IObservable[RxTask[T]] = {
+    new RxImplConfigGen.RxConfigGenStream[RxTask[T]](this.injector)
   }
 
-  def updates: RxStream[RxVersionUpdateEvent] = {
-    new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this)
+  def updates: IObservable[RxVersionUpdateEvent] = {
+    new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this.injector)
   }
 
-  def initialized: RxStream[RxInitializationEvent] = {
-    new RxImplConfigGen.RxConfigGenStream[RxInitializationEvent](this)
+  def initialized: IObservable[RxInitializationEvent] = {
+    new RxImplConfigGen.RxConfigGenStream[RxInitializationEvent](injector)
   }
 
   def generateConfigs(): Unit = {
