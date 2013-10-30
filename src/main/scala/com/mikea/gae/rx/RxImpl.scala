@@ -12,7 +12,13 @@ import java.io.IOException
 import java.util.Objects
 import java.util.logging.Logger
 import com.mikea.gae.rx.base.{IObservable, DoFn, Observers, IObserver}
+import com.google.appengine.api.memcache.{Expiration, MemcacheService}
+import com.mikea.gae.GaeUtil
+import com.googlecode.objectify.ObjectifyService._
+import com.googlecode.objectify.Key
+import com.mikea.gae.rx.model.AppVersion
 import java.util
+import scala.collection.mutable
 
 @Singleton object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"
@@ -22,12 +28,18 @@ import java.util
   private final val log: Logger = Loggers.getContextLogger
 }
 
-@Singleton class RxImpl @Inject()(_pipelines: Set[RxPipeline], _injector: Injector, blobstoreService: BlobstoreService) extends Rx {
+@Singleton class RxImpl @Inject()(
+    _pipelines: java.util.Set[RxPipeline],
+    _injector: Injector, 
+    _blobstoreService: BlobstoreService,
+    _memcache : MemcacheService) extends Rx {
 
   private def initIfNeeded(): Unit = {
     if (isInitialized) return
     isInitialized = true
-    for (pipeline <- _pipelines) {
+
+    import scala.collection.JavaConverters._
+    for (pipeline <- _pipelines.asScala) {
       pipeline.init(this)
     }
   }
@@ -40,14 +52,16 @@ import java.util
 
   def injector() = _injector
 
-  def uploads: IObservable[RxUploadEvent] = {
-    import scala.collection.JavaConverters._
-
+  def uploads(): IObservable[RxUploadEvent] = {
     requests
       .filter((evt: RxHttpRequestEvent) => evt.request.getRequestURI == RxImpl.getUploadsUrl)
       .transform((event: RxHttpRequestEvent) => {
-      val blobInfos: Map[String, Set[BlobInfo]] = blobstoreService.getBlobInfos(event.request).asScala.mapValues((list: util.List[BlobInfo]) => list.asScala.toSet).toMap
-      new RxUploadEvent(this, event, blobInfos)
+      val javaMap: util.Map[String, util.List[BlobInfo]] = _blobstoreService.getBlobInfos(event.request)
+
+      import scala.collection.JavaConverters._
+      val scalaMap: mutable.Map[String, util.List[BlobInfo]] = javaMap.asScala
+      val blobInfos: Map[String, Set[BlobInfo]] = scalaMap.mapValues((list: java.util.List[BlobInfo]) => list.asScala.toSet).toMap
+          new RxUploadEvent(this, event, blobInfos)
     })
   }
 
@@ -78,16 +92,39 @@ import java.util
     })
   }
 
-  def updates: IObservable[RxVersionUpdateEvent] = {
-    initialized().transform(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
+  def updates(): IObservable[RxVersionUpdateEvent] = {
+    contextInitialized().transform(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
       def process(rxInitializationEvent: RxInitializationEvent, emitFn: (RxVersionUpdateEvent) => Unit): Unit = {
-        RxImpl.log.info("Checking version...")
-        RxImpl.log.info(System.getProperties.toString)
+        val applicationVersion: String = GaeUtil.getApplicationVersion
+        RxImpl.log.info("Checking version " + applicationVersion)
+
+        val memcacheVersion: AnyRef = _memcache.get(RxMemcacheKeys.CURRENT_VERSION)
+        if (memcacheVersion != null && memcacheVersion.toString.equals(applicationVersion)) {
+          RxImpl.log.info("Current according to memcache")
+          return
+        }
+
+        val key: Key[AppVersion] = Key.create(classOf[AppVersion], applicationVersion)
+        val dbAppVersion: AppVersion = ofy.load.key(key).now()
+
+        if (dbAppVersion != null) {
+          RxImpl.log.info("Current according to db")
+          _memcache.put(RxMemcacheKeys.CURRENT_VERSION, applicationVersion, Expiration.byDeltaSeconds(3600 * 24))
+          return
+        }
+
+        RxImpl.log.info("Version changed")
+
+        // fore event
+        emitFn(new RxVersionUpdateEvent(applicationVersion))
+
+        ofy.save().entity(AppVersion.forVersion(applicationVersion)).now()
+        _memcache.put(RxMemcacheKeys.CURRENT_VERSION, applicationVersion, Expiration.byDeltaSeconds(3600 * 24))
       }
     })
   }
 
-  def initialized(): IObservable[RxInitializationEvent] = initializationStream
+  def contextInitialized(): IObservable[RxInitializationEvent] = initializationStream
 
   def requests: IObservable[RxHttpRequestEvent] = requestsStream
 

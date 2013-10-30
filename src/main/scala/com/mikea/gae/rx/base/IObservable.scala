@@ -54,6 +54,7 @@ trait IObservable[T] {
   }
 
   def apply(action: (T) => Unit): IObservable[T] = sink(Observers.asObserver(action))
+  def apply(actionClass: Class[_ <: (T) => Unit]): IObservable[T] = apply(instantiate(actionClass))
 
   def filter(predicate: (T) => Boolean): IObservable[T] = {
     transform(new DoFn[T, T] {

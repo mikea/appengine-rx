@@ -12,13 +12,13 @@ import java.io.Serializable
 trait Rx {
   def cron(specification: String): IObservable[RxCronEvent]
 
-  def updates: IObservable[RxVersionUpdateEvent]
+  def updates(): IObservable[RxVersionUpdateEvent]
 
-  def initialized: IObservable[RxInitializationEvent]
+  def contextInitialized(): IObservable[RxInitializationEvent]
 
-  def uploads: IObservable[RxUploadEvent]
+  def uploads(): IObservable[RxUploadEvent]
 
-  def injector: Injector
+  def injector(): Injector
 
   def taskqueue[T <: Serializable](queueName: String): IObserver[RxTask[T]]
 

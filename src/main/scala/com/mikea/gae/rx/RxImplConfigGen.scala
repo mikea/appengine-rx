@@ -59,7 +59,7 @@ class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
     new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this.injector)
   }
 
-  def initialized: IObservable[RxInitializationEvent] = {
+  def contextInitialized: IObservable[RxInitializationEvent] = {
     new RxImplConfigGen.RxConfigGenStream[RxInitializationEvent](injector)
   }
 

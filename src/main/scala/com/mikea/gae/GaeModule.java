@@ -7,6 +7,8 @@ import com.google.appengine.api.channel.ChannelService;
 import com.google.appengine.api.channel.ChannelServiceFactory;
 import com.google.appengine.api.images.ImagesService;
 import com.google.appengine.api.images.ImagesServiceFactory;
+import com.google.appengine.api.memcache.MemcacheService;
+import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.google.appengine.api.oauth.OAuthService;
 import com.google.appengine.api.oauth.OAuthServiceFactory;
 import com.google.appengine.api.urlfetch.URLFetchService;
@@ -66,5 +68,9 @@ public class GaeModule extends AbstractModule {
     ChannelService getChannelService() {
         return ChannelServiceFactory.getChannelService();
     }
-
+    @Provides
+    @Singleton
+    MemcacheService getMemcacheService() {
+        return MemcacheServiceFactory.getMemcacheService();
+    }
 }
