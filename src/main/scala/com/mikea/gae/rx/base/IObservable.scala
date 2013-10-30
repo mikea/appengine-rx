@@ -2,6 +2,19 @@ package com.mikea.gae.rx.base
 
 import com.google.common.base.Preconditions._
 
+object IObservable {
+  @deprecated
+  def flatten[T](src: IObservable[Iterable[T]]): IObservable[T] = {
+    src.transform(new DoFn[Iterable[T], T] {
+      def process(values: Iterable[T], emitFn: (T) => Unit) = {
+        for (t <- values) {
+          emitFn(t)
+        }
+      }
+    })
+  }
+}
+
 trait IObservable[T] {
   def subscribe(observer: IObserver[T]): IDisposable
 
@@ -53,7 +66,7 @@ trait IObservable[T] {
     this
   }
 
-  def apply(action: (T) => Unit): IObservable[T] = sink(Observers.asObserver(action))
+  def apply(action: (T) => Unit): IObservable[T] = sink(IObserver.asObserver(action))
   def apply(actionClass: Class[_ <: (T) => Unit]): IObservable[T] = apply(instantiate(actionClass))
 
   def filter(predicate: (T) => Boolean): IObservable[T] = {

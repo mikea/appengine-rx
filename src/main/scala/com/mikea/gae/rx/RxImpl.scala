@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse
 import java.io.IOException
 import java.util.Objects
 import java.util.logging.Logger
-import com.mikea.gae.rx.base.{IObservable, DoFn, Observers, IObserver}
+import com.mikea.gae.rx.base.{IObservable, DoFn, IObserver}
 import com.google.appengine.api.memcache.{Expiration, MemcacheService}
 import com.mikea.gae.GaeUtil
 import com.googlecode.objectify.ObjectifyService._
@@ -66,7 +66,7 @@ import scala.collection.mutable
   }
 
   def taskqueue[T <: java.io.Serializable](queueName: String): IObserver[RxTask[T]] = {
-    Observers.asObserver((value: RxTask[T]) => RxTasks.enqueue(queueName, value))
+    IObserver.asObserver((value: RxTask[T]) => RxTasks.enqueue(queueName, value))
   }
 
   def tasks[T <: java.io.Serializable](queueName: String, payloadClass: Class[T]): IObservable[RxTask[T]] = {
