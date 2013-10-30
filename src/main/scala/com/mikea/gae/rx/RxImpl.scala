@@ -66,7 +66,7 @@ import scala.collection.mutable
   }
 
   def taskqueue[T <: java.io.Serializable](queueName: String): IObserver[RxTask[T]] = {
-    IObserver.asObserver((value: RxTask[T]) => RxTasks.enqueue(queueName, value))
+    RxTasks.queue(queueName).map((task: RxTask[T]) => task.asTaskOptions())
   }
 
   def tasks[T <: java.io.Serializable](queueName: String, payloadClass: Class[T]): IObservable[RxTask[T]] = {

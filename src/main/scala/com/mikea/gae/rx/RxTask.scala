@@ -5,6 +5,7 @@ import com.google.common.base.Objects
 import javax.servlet.http.HttpServletRequest
 import java.io._
 import resource._
+import com.google.appengine.api.taskqueue.TaskOptions
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -39,8 +40,7 @@ object RxTask {
 }
 
 class RxTask[T <: Serializable](_payload: T) {
-
-  def toPayLoad: Array[Byte] = {
+  private def toPayLoad: Array[Byte] = {
     import resource._
 
     for (baos <- managed(new ByteArrayOutputStream)) {
@@ -52,6 +52,10 @@ class RxTask[T <: Serializable](_payload: T) {
     }
 
     throw new IOException()
+  }
+
+  def asTaskOptions(): TaskOptions = {
+    TaskOptions.Builder.withUrl(RxUrls.RX_TASKS_URL_BASE).payload(toPayLoad)
   }
 
   override def toString: String = {

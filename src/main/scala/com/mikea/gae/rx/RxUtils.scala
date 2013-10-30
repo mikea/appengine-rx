@@ -8,7 +8,7 @@ import com.mikea.gae.rx.base.{DoFn, IObserver}
  */
 object RxUtils {
   def redirect[T <: RxHttpRequestEvent](url: String): IObserver[T] = {
-    IObserver.asObserver((value: T) => value.sendRedirect(url))
+    (value: T) => value.sendRedirect(url)
   }
 
   def skipAbsent[T](): DoFn[Option[T], T] = {

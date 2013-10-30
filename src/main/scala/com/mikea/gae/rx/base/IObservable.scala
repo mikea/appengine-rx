@@ -69,7 +69,7 @@ trait IObservable[T] {
     this
   }
 
-  def apply(action: (T) => Unit): IObservable[T] = sink(IObserver.asObserver(action))
+  def apply(action: (T) => Unit): IObservable[T] = sink(action)
   def apply(actionClass: Class[_ <: (T) => Unit]): IObservable[T] = apply(instantiate(actionClass))
 
   def filter(predicate: (T) => Boolean): IObservable[T] = {
