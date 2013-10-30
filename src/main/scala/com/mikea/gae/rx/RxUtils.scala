@@ -11,10 +11,10 @@ object RxUtils {
     IObserver.asObserver((value: T) => value.sendRedirect(url))
   }
 
-  def skipAbsent[T]: DoFn[Optional[T], T] = {
-    new DoFn[Optional[T], T] {
-      def process(in: Optional[T], emitFn: (T) => Unit): Unit = {
-        if (in.isPresent) {
+  def skipAbsent[T](): DoFn[Option[T], T] = {
+    new DoFn[Option[T], T] {
+      def process(in: Option[T], emitFn: (T) => Unit): Unit = {
+        if (in.isDefined) {
           emitFn(in.get)
         }
       }

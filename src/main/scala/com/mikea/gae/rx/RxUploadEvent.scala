@@ -10,4 +10,6 @@ class RxUploadEvent(rx: Rx, event: RxHttpRequestEvent, _blobInfos: Map[String, S
   override def toString: String = {
     Objects.toStringHelper(this).add("blobInfos", _blobInfos).toString
   }
+
+  def blobInfos() : Map[String, Set[BlobInfo]] = _blobInfos
 }
