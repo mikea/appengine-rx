@@ -13,6 +13,8 @@ dependencies {
     compile 'javax.servlet:servlet-api:2.5'
     compile 'com.google.code.findbugs:jsr305:2.0.2'
     compile 'com.googlecode.objectify:objectify:4.0rc1'
+
     compile "org.scala-lang:scala-library:$scalaVersion"
+    compile "org.scala-lang:scala-reflect:$scalaVersion"
     compile "com.jsuereth:scala-arm_$scalaBinaryVersion:1.3"
 }

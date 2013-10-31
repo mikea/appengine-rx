@@ -1,26 +1,23 @@
 package com.mikea.gae.rx
 
-import com.google.common.reflect.TypeToken
-import com.google.inject.Injector
-import com.mikea.gae.rx.base.IObservable
-import com.mikea.gae.rx.base.IObserver
+import com.mikea.gae.rx.base.{Subject, Observable, Observer}
 import java.io.Serializable
+
+import scala.reflect.runtime.universe._
 
 /**
  * @author mike.aizatsky@gmail.com
  */
 trait Rx {
-  def cron(specification: String): IObservable[RxCronEvent]
+  def requests(pattern: String): Observable[RxHttpRequestEvent]
 
-  def appVersionUpdate(): IObservable[RxVersionUpdateEvent]
+  def cron(specification: String): Observable[RxCronEvent]
 
-  def contextInitialized(): IObservable[RxInitializationEvent]
+  def appVersionUpdate(): Observable[RxVersionUpdateEvent]
 
-  def upload(): IObservable[RxUploadEvent]
+  def contextInitialized(): Observable[RxInitializationEvent]
 
-  def tasks[T <: Serializable](queueName: String, payloadClass: Class[T]): IObservable[RxTask[T]]
+  def upload(): Observable[RxUploadEvent]
 
-  def tasks[T <: Serializable](queueName: String, typeToken: TypeToken[T]): IObservable[RxTask[T]]
-
-  def taskqueue[T <: Serializable](queueName: String): IObserver[RxTask[T]]
+  def taskqueue[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]]
 }

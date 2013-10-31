@@ -1,9 +1,9 @@
 package com.mikea.gae.rx.base
 
 
-object IObserver {
-  implicit def asObserver[T](action: (T) => Unit): IObserver[T] = {
-    new IObserver[T] {
+object Observer {
+  implicit def asObserver[T](action: (T) => Unit): Observer[T] = {
+    new Observer[T] {
       def onCompleted(): Unit = {
       }
 
@@ -18,17 +18,17 @@ object IObserver {
   }
 }
 
-trait IObserver[T] {
+trait Observer[T] {
   def onCompleted(): Unit
 
   def onError(e: Exception): Unit
 
   def onNext(value: T): Unit
 
-  def map[S](fn: S => T): IObserver[S] = {
+  def map[S](fn: S => T): Observer[S] = {
     val self = this
 
-    new IObserver[S] {
+    new Observer[S] {
       def onError(e: Exception) = self.onError(e)
 
       def onCompleted() = self.onCompleted()

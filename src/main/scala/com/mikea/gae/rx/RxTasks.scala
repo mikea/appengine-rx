@@ -3,7 +3,7 @@ package com.mikea.gae.rx
 import com.google.appengine.api.taskqueue.QueueFactory
 import com.google.appengine.api.taskqueue.TaskOptions
 import java.io.Serializable
-import com.mikea.gae.rx.base.IObserver
+import com.mikea.gae.rx.base.Observer
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -18,7 +18,11 @@ object RxTasks {
     QueueFactory.getQueue(queueName).add(taskOptions)
   }
 
-  def queue(queueName: String): IObserver[TaskOptions] = {
+  def taskqueue(queueName: String): Observer[TaskOptions] = {
     (taskOptions: TaskOptions) => enqueue(queueName, taskOptions)
+  }
+
+  def taskqueue() : Observer[(String, TaskOptions)] = {
+    (tuple: (String, TaskOptions)) => enqueue(tuple._1, tuple._2)
   }
 }

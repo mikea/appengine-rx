@@ -1,13 +1,13 @@
 package com.mikea.gae.rx
 
 import com.google.common.base.Optional
-import com.mikea.gae.rx.base.{DoFn, IObserver}
+import com.mikea.gae.rx.base.{DoFn, Observer}
 
 /**
  * @author mike.aizatsky@gmail.com
  */
 object RxUtils {
-  def redirect[T <: RxHttpRequestEvent](url: String): IObserver[T] = {
+  def redirect[T <: RxHttpRequestEvent](url: String): Observer[T] = {
     (value: T) => value.sendRedirect(url)
   }
 

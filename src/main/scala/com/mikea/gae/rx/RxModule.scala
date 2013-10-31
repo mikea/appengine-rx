@@ -10,7 +10,7 @@ class RxModule extends ServletModule {
 
     ObjectifyService.register(classOf[AppVersion])
 
-    serve(RxUrls.RX_URL_BASE + "*").`with`(classOf[RxServlet])
+    filter("*").through(classOf[RxFilter])
     bind(classOf[Rx]).to(classOf[RxImpl])
   }
 }

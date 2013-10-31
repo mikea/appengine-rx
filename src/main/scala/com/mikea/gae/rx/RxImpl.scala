@@ -1,17 +1,15 @@
 package com.mikea.gae.rx
 
 import com.google.appengine.api.blobstore.{BlobInfo, BlobstoreService}
-import com.google.common.reflect.TypeToken
 import com.google.inject.Inject
 import com.google.inject.Injector
 import com.google.inject.Singleton
-import com.mikea.util.Loggers
+import com.mikea.util.{UriPatternMatcher, ServletStyleUriPatternMatcher, Loggers}
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import java.io.IOException
-import java.util.Objects
+import java.io.Serializable
 import java.util.logging.Logger
-import com.mikea.gae.rx.base.{IObservable, DoFn, IObserver}
+import com.mikea.gae.rx.base._
 import com.google.appengine.api.memcache.{Expiration, MemcacheService}
 import com.mikea.gae.GaeUtil
 import com.googlecode.objectify.ObjectifyService._
@@ -19,8 +17,11 @@ import com.googlecode.objectify.Key
 import com.mikea.gae.rx.model.AppVersion
 import java.util
 import scala.collection.mutable
+import scala.reflect.runtime.universe._
+import javax.servlet.FilterChain
+import scala.collection.immutable.HashMap
 
-@Singleton object RxImpl {
+object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"
 
   private[rx] def getUploadsUrl: String = RxUrls.RX_UPLOADS_BASE
@@ -44,17 +45,15 @@ import scala.collection.mutable
     }
   }
 
-  def cron(specification: String): IObservable[RxCronEvent] = {
-    requests
-      .filter((evt: RxHttpRequestEvent) => evt.request.getRequestURI == RxImpl.getCronUrl(specification))
+  def cron(specification: String): Observable[RxCronEvent] = {
+    requests(RxImpl.getCronUrl(specification))
       .map((evt: RxHttpRequestEvent) => new RxCronEvent)
   }
 
   def injector() = _injector
 
-  def upload(): IObservable[RxUploadEvent] = {
-    requests
-      .filter((evt: RxHttpRequestEvent) => evt.request.getRequestURI == RxImpl.getUploadsUrl)
+  def upload(): Observable[RxUploadEvent] = {
+    requests(RxImpl.getUploadsUrl)
       .map((event: RxHttpRequestEvent) => {
       val javaMap: util.Map[String, util.List[BlobInfo]] = _blobstoreService.getBlobInfos(event.request)
 
@@ -65,34 +64,32 @@ import scala.collection.mutable
     })
   }
 
-  def taskqueue[T <: java.io.Serializable](queueName: String): IObserver[RxTask[T]] = {
-    RxTasks.queue(queueName).map((task: RxTask[T]) => task.asTaskOptions())
+  def taskqueue[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = {
+    Subject.combine(taskqueueObservable(queueName), taskqueueObserver(queueName))
   }
 
-  def tasks[T <: java.io.Serializable](queueName: String, payloadClass: Class[T]): IObservable[RxTask[T]] = {
-    tasks(queueName, TypeToken.of(payloadClass))
+  private def taskqueueObserver[T <: java.io.Serializable](queueName: String): Observer[RxTask[T]] = {
+    RxTasks.taskqueue(queueName).map((task: RxTask[T]) => task.asTaskOptions())
   }
 
-  def tasks[T <: java.io.Serializable](queueName: String, typeToken: TypeToken[T]): IObservable[RxTask[T]] = {
-    requests.filter((event: RxHttpRequestEvent) => {
-      val request: HttpServletRequest = event.request
-      val requestQueueName: String = request.getHeader("X-AppEngine-QueueName")
-      Objects.equals(requestQueueName, queueName)
-    })
-      .map((event: RxHttpRequestEvent) => {
-      try {
-        event.sendOk()
-        RxTask.fromRequest(event.request)
-      }
-      catch {
-        case e: IOException => {
-          throw new RuntimeException(e)
-        }
-      }
-    })
+  private def taskqueueObservable[T <: java.io.Serializable : TypeTag](queueName: String): Observable[RxTask[T]] = {
+    taskqueueObservableImpl(queueName).map((event: RxHttpRequestEvent) => RxTask.fromRequest(event.request))
   }
 
-  def appVersionUpdate(): IObservable[RxVersionUpdateEvent] = {
+  private def taskqueueObservableImpl(queueName: String): Observable[RxHttpRequestEvent] = {
+    initIfNeeded()
+
+    val observableOption: Option[PushObservable[RxHttpRequestEvent]] = tasksStreams.get(queueName)
+    if (observableOption.isDefined) {
+      return observableOption.get
+    }
+
+    val observable: PushObservable[RxHttpRequestEvent] = newPushObservable
+    tasksStreams = tasksStreams + (queueName -> observable)
+    observable
+  }
+
+  def appVersionUpdate(): Observable[RxVersionUpdateEvent] = {
     contextInitialized().map(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
       def process(rxInitializationEvent: RxInitializationEvent, emitFn: (RxVersionUpdateEvent) => Unit): Unit = {
         val applicationVersion: String = GaeUtil.getApplicationVersion
@@ -124,28 +121,72 @@ import scala.collection.mutable
     })
   }
 
-  def contextInitialized(): IObservable[RxInitializationEvent] = initializationStream
+  def contextInitialized(): Observable[RxInitializationEvent] = initializationStream
 
-  def requests: IObservable[RxHttpRequestEvent] = requestsStream
-
-  def handleRequest(request: HttpServletRequest, response: HttpServletResponse): Unit = {
+  def requests(pattern: String): Observable[RxHttpRequestEvent] = {
     initIfNeeded()
-    RxImpl.log.fine(s"handleRequest(${request.getRequestURI})")
-    val rxResponse: RxHttpResponse = new RxHttpResponse(response)
-    requestsStream.onNext(new RxHttpRequestEvent(this, request, rxResponse))
-    if (!rxResponse.hasResponse) {
-      rxResponse.sendError(404, request.getRequestURI)
-      RxImpl.log.fine("Error 404 : request not processed")
+
+    val streamOption: Option[PushObservable[RxHttpRequestEvent]] = requestStreams.get(pattern)
+    if (streamOption.isDefined) {
+      return streamOption.get
     }
+
+    val observable: PushObservable[RxHttpRequestEvent] = newPushObservable
+    requestStreams = requestStreams + (pattern -> observable)
+    requestMatchers = requestMatchers :+ (new ServletStyleUriPatternMatcher(pattern) -> observable)
+    observable
   }
 
-  def onContextInitialized(): Unit = {
+  def init(): Unit = {
     initIfNeeded()
-    RxImpl.log.fine("onContextInitialized")
+    RxImpl.log.fine("init")
     initializationStream.onNext(new RxInitializationEvent)
+  }
+  
+  def destroy(): Unit = { }
+
+  def doFilter(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain): Unit = {
+    val requestUri: String = request.getRequestURI
+    initIfNeeded()
+    RxImpl.log.fine(s"doFilter($requestUri)")
+
+    val queueName: String = request.getHeader("X-AppEngine-QueueName")
+    val tasksStream: Option[PushObservable[RxHttpRequestEvent]] = tasksStreams.get(queueName)
+    
+    if (tasksStream.isDefined) {
+      tasksStream.get.onNext(newRxHttpRequestEvent(request, response))
+      return
+    }
+
+    for (pair <- requestMatchers) {
+      val matcher: UriPatternMatcher = pair._1
+      val observable: PushObservable[RxHttpRequestEvent] = pair._2
+
+      if (matcher.matches(requestUri)) {
+        observable.onNext(newRxHttpRequestEvent(request, response))
+        return
+      }
+    }
+
+    chain.doFilter(request, response)
+  }
+
+
+  def newRxHttpRequestEvent(request: HttpServletRequest, response: HttpServletResponse): RxHttpRequestEvent = {
+    new RxHttpRequestEvent(this, request, new RxHttpResponse(response))
+  }
+
+  def newPushObservable[T]:PushObservable[T] = new PushObservable[T] {
+    def instantiate[C](aClass: Class[C]) = _injector.getInstance(aClass)
   }
 
   private var isInitialized: Boolean = false
-  private val requestsStream: RxPushStream[RxHttpRequestEvent] = new RxPushStream[RxHttpRequestEvent](injector())
-  private val initializationStream: RxPushStream[RxInitializationEvent] = new RxPushStream[RxInitializationEvent](injector())
+
+  private var requestStreams: Map[String, PushObservable[RxHttpRequestEvent]] = HashMap()
+  private var requestMatchers: List[(UriPatternMatcher, PushObservable[RxHttpRequestEvent])] = List()
+
+  // queue name => stream
+  private var tasksStreams: Map[String, PushObservable[RxHttpRequestEvent]] = HashMap()
+
+  private val initializationStream: PushObservable[RxInitializationEvent] = newPushObservable
 }
