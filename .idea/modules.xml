@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/appengine-java-tools.iml" filepath="$PROJECT_DIR$/appengine-java-tools.iml" />
+      <module fileurl="file://$PROJECT_DIR$/appengine-rx.iml" filepath="$PROJECT_DIR$/appengine-rx.iml" />
     </modules>
   </component>
 </project>
