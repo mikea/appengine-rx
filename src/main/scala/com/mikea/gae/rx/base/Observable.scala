@@ -7,7 +7,7 @@ import scala.reflect.runtime.universe._
 
 
 object Observable {
-  class IterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) {
+  class IterableObservableHelper[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) {
     def flatten(): Observable[T] = {
       observable.map(new DoFn[I[T], T] {
         def process(s: I[T], emitFn: (T) => Unit) = s.map(emitFn)
@@ -15,7 +15,7 @@ object Observable {
     }
   }
 
-  implicit def asIterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) = new IterableObservable[T, I](observable)
+  implicit def asIterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) = new IterableObservableHelper[T, I](observable)
 }
 
 trait Observable[T] {
@@ -72,11 +72,11 @@ trait Observable[T] {
   def mapMany[U, C <: (T) => Iterable[U] : TypeTag]: Observable[U] = mapMany(instantiate[C])
 
 
+  def through[C  <: Subject[T] : TypeTag]: Observable[T] = through(instantiate[C])
   def through(sink: Subject[T]): Observable[T] = {
     subscribe(sink)
     sink
   }
-  def through[C  <: Subject[T] : TypeTag]: Observable[T] = through(instantiate[C])
 
   def foreach[C <: (T => Unit) : TypeTag]: Observable[T] = foreach(instantiate[C])
   def foreach(action: (T) => Unit): Observable[T] = sink(Observer.asObserver(action))
