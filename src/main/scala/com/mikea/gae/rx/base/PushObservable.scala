@@ -8,6 +8,18 @@ abstract class PushObservable[T] extends Observable[T] {
     }
   }
 
+  def onCompleted() = {
+    for (observer <- observers) {
+      observer.onCompleted()
+    }
+  }
+
+  def onError(e: Exception) = {
+    for (observer <- observers) {
+      observer.onError(e)
+    }
+  }
+
   def subscribe(observer: Observer[T]): Disposable = {
     observers = observers :+ observer
 
