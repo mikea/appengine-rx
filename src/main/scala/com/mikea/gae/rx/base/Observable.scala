@@ -1,18 +1,19 @@
 package com.mikea.gae.rx.base
 
 import com.google.common.base.Preconditions._
+import language.implicitConversions
+import language.higherKinds
 
 object Observable {
-  @deprecated
-  def flatten[T](src: Observable[Iterable[T]]): Observable[T] = {
-    src.map(new DoFn[Iterable[T], T] {
-      def process(values: Iterable[T], emitFn: (T) => Unit) = {
-        for (t <- values) {
-          emitFn(t)
-        }
-      }
-    })
+  class IterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) {
+    def flatten(): Observable[T] = {
+      observable.map(new DoFn[I[T], T] {
+        def process(s: I[T], emitFn: (T) => Unit) = s.map(emitFn)
+      })
+    }
   }
+
+  implicit def asIterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) = new IterableObservable[T, I](observable)
 }
 
 trait Observable[T] {
@@ -68,7 +69,7 @@ trait Observable[T] {
     this.subscribe(sink)
     this
   }
-
+  def sink(sinkClass: Class[_ <: Observer[T]]): Observable[T] = sink(instantiate(sinkClass))
   def apply(action: (T) => Unit): Observable[T] = sink(action)
   def apply(actionClass: Class[_ <: (T) => Unit]): Observable[T] = apply(instantiate(actionClass))
 
@@ -82,9 +83,9 @@ trait Observable[T] {
     })
   }
 
+  // todo: clean this up
   def either[S](other: Observable[S]) : Observable[Either[T, S]] = {
     var self = this
-
     new Observable[Either[T, S]] {
       def subscribe(observer: Observer[Either[T, S]]):Disposable = {
         var completed: Int = 0
