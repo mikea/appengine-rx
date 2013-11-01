@@ -1,9 +1,8 @@
 .gradle
-*.class
 build/
-*.iml
+idea/workspace.xml
 
-# Package Files #
+*.class
 *.jar
 *.war
 *.ear

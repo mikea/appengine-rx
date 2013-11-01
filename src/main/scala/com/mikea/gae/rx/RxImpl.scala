@@ -11,7 +11,6 @@ import java.io.Serializable
 import java.util.logging.Logger
 import com.mikea.gae.rx.base._
 import com.google.appengine.api.memcache.{Expiration, MemcacheService}
-import com.mikea.gae.GaeUtil
 import com.googlecode.objectify.ObjectifyService._
 import com.googlecode.objectify.Key
 import com.mikea.gae.rx.model.AppVersion
@@ -20,6 +19,7 @@ import scala.collection.mutable
 import scala.reflect.runtime.universe._
 import javax.servlet.FilterChain
 import scala.collection.immutable.HashMap
+import com.google.appengine.api.utils.SystemProperty
 
 object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"
@@ -92,7 +92,7 @@ object RxImpl {
   def appVersionUpdate(): Observable[RxVersionUpdateEvent] = {
     contextInitialized().map(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
       def process(rxInitializationEvent: RxInitializationEvent, emitFn: (RxVersionUpdateEvent) => Unit): Unit = {
-        val applicationVersion: String = GaeUtil.getApplicationVersion
+        val applicationVersion: String = SystemProperty.applicationVersion.get
         RxImpl.log.info("Checking version " + applicationVersion)
 
         val memcacheVersion: AnyRef = _memcache.get(RxMemcacheKeys.CURRENT_VERSION)

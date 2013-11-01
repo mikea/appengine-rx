@@ -6,15 +6,30 @@ repositories {
 }
 
 dependencies {
+    if (!ext.hasProperty('gaeVersion')) {
+        ext.gaeVersion = '1.8.6'
+    }
+
+    if (!ext.hasProperty('scalaBinaryVersion')) {
+        ext.scalaBinaryVersion = '2.10'
+    }
+
+    if (!ext.hasProperty('scalaVersion')) {
+        ext.scalaVersion = '2.10.3'
+    }
+
+    // appengine libraries
     compile "com.google.appengine:appengine-api-1.0-sdk:$gaeVersion"
+
+    // guice
     compile 'com.google.inject:guice:3.0'
     compile 'com.google.inject.extensions:guice-servlet:3.0'
-    compile "com.google.guava:guava:$guavaVersion"
-    compile 'javax.servlet:servlet-api:2.5'
-    compile 'com.google.code.findbugs:jsr305:2.0.2'
-    compile 'com.googlecode.objectify:objectify:4.0rc1'
 
+    // scala
     compile "org.scala-lang:scala-library:$scalaVersion"
     compile "org.scala-lang:scala-reflect:$scalaVersion"
     compile "com.jsuereth:scala-arm_$scalaBinaryVersion:1.3"
+
+    compile 'javax.servlet:servlet-api:2.5'
+    compile 'com.googlecode.objectify:objectify:4.0rc1'
 }
