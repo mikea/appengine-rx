@@ -5,6 +5,9 @@
       <configuration>
         <option name="compilerLibraryLevel" value="Global" />
         <option name="compilerLibraryName" value="org.scala-lang:scala-compiler:2.10.3" />
+        <option name="deprecationWarnings" value="true" />
+        <option name="explainTypeErrors" value="true" />
+        <option name="uncheckedWarnings" value="true" />
       </configuration>
     </facet>
   </component>
