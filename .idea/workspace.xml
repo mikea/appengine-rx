@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9fafefa6-747c-4c7d-baa2-42ea7d3c197f" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
     </list>
     <ignored path="appengine-java-tools.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -87,7 +88,7 @@
       <file leaf-file-name=".gitignore" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="5" column="0" selection-start="43" selection-end="43" vertical-scroll-proportion="0.12908778" vertical-offset="0" max-vertical-offset="581">
+            <state line="2" column="1" selection-start="16" selection-end="16" vertical-scroll-proportion="0.051635113" vertical-offset="0" max-vertical-offset="581">
               <folding />
             </state>
           </provider>
@@ -532,7 +533,7 @@
       <created>1375829056391</created>
       <updated>1375829056391</updated>
       <workItem from="1383329654162" duration="348000" />
-      <workItem from="1383330016085" duration="372000" />
+      <workItem from="1383330016085" duration="408000" />
     </task>
     <task id="LOCAL-00001" summary="removing unnecessary code and dependencies for cleanup">
       <created>1383330371771</created>
@@ -542,11 +543,15 @@
       <created>1383330379683</created>
       <updated>1383330379683</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="idea files">
+      <created>1383330392904</created>
+      <updated>1383330392904</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="720000" />
+    <option name="totallyTimeSpent" value="756000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="4" y="22" width="1676" height="1028" extended-state="6" />
@@ -657,7 +662,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="5" column="0" selection-start="43" selection-end="43" vertical-scroll-proportion="0.12908778" vertical-offset="0" max-vertical-offset="581">
+        <state line="2" column="1" selection-start="16" selection-end="16" vertical-scroll-proportion="0.051635113" vertical-offset="0" max-vertical-offset="581">
           <folding />
         </state>
       </provider>
