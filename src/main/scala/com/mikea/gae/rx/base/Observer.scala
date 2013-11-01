@@ -1,8 +1,9 @@
 package com.mikea.gae.rx.base
 
+import language.implicitConversions
 
 object Observer {
-  implicit def asObserver[T](action: (T) => Unit): Observer[T] = {
+  def asObserver[T](action: (T) => Unit): Observer[T] = {
     new Observer[T] {
       def onCompleted(): Unit = {
       }

@@ -3,6 +3,8 @@ package com.mikea.gae.rx.base
 import com.google.common.base.Preconditions._
 import language.implicitConversions
 import language.higherKinds
+import scala.reflect.runtime.universe._
+
 
 object Observable {
   class IterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) {
@@ -20,6 +22,11 @@ trait Observable[T] {
   def subscribe(observer: Observer[T]): Disposable
 
   def instantiate[C](aClass : Class[C]) : C
+  def instantiate[C : TypeTag] : C = {
+    val mirror = runtimeMirror(getClass.getClassLoader)
+    val clazz: Class[C] = mirror.runtimeClass(typeOf[C].typeSymbol.asClass).asInstanceOf[Class[C]]
+    instantiate(clazz)
+  }
 
   def map[U](f: (T) => U): Observable[U] = {
     map(new DoFn[T, U] {
@@ -62,16 +69,20 @@ trait Observable[T] {
     })
   }
 
-  def mapMany[U](fnClass: Class[_ <: (T) => Iterable[U]]): Observable[U] = mapMany(instantiate(fnClass))
+  def mapMany[U, C <: (T) => Iterable[U] : TypeTag]: Observable[U] = mapMany(instantiate[C])
 
 
-  def sink(sink: Observer[T]): Observable[T] = {
-    this.subscribe(sink)
-    this
+  def through(sink: Subject[T]): Observable[T] = {
+    subscribe(sink)
+    sink
   }
-  def sink(sinkClass: Class[_ <: Observer[T]]): Observable[T] = sink(instantiate(sinkClass))
-  def apply(action: (T) => Unit): Observable[T] = sink(action)
-  def apply(actionClass: Class[_ <: (T) => Unit]): Observable[T] = apply(instantiate(actionClass))
+  def through[C  <: Subject[T] : TypeTag]: Observable[T] = through(instantiate[C])
+
+  def foreach[C <: (T => Unit) : TypeTag]: Observable[T] = foreach(instantiate[C])
+  def foreach(action: (T) => Unit): Observable[T] = sink(Observer.asObserver(action))
+
+  def sink[C <: Observer[T] : TypeTag]: Observable[T] = sink(instantiate[C])
+  def sink(observer: Observer[T]): Observable[T] = {subscribe(observer); this}
 
   def filter(predicate: (T) => Boolean): Observable[T] = {
     map(new DoFn[T, T] {

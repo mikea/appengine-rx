@@ -19,10 +19,10 @@ object RxTasks {
   }
 
   def taskqueue(queueName: String): Observer[TaskOptions] = {
-    (taskOptions: TaskOptions) => enqueue(queueName, taskOptions)
+    Observer.asObserver((taskOptions: TaskOptions) => enqueue(queueName, taskOptions))
   }
 
   def taskqueue() : Observer[(String, TaskOptions)] = {
-    (tuple: (String, TaskOptions)) => enqueue(tuple._1, tuple._2)
+    Observer.asObserver((tuple: (String, TaskOptions)) => enqueue(tuple._1, tuple._2))
   }
 }
