@@ -4,6 +4,7 @@ package com.mikea.gae.rx.base
 /**
  * @author mike.aizatsky@gmail.com
  */
+// todo: this can probably replaced by (observable => Unit) function instead
 abstract class Processor[T] extends Observer[T] {
   def process(observable: Observable[T]): Unit
 

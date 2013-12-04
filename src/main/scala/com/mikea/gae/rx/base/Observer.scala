@@ -20,15 +20,15 @@ object Observer {
 }
 
 trait Observer[T] {
+  self =>
+
   def onCompleted(): Unit
 
   def onError(e: Exception): Unit
 
   def onNext(value: T): Unit
 
-  def map[S](fn: S => T): Observer[S] = {
-    val self = this
-
+  def unmap[S](fn: S => T): Observer[S] = {
     new Observer[S] {
       def onError(e: Exception) = self.onError(e)
 

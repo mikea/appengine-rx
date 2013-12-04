@@ -20,4 +20,5 @@ object Subject {
 }
 
 trait Subject[T] extends Observer[T] with Observable[T] {
+  def transform[S](mapFn: T => S, unmapFn: S => T) : Subject[S] = Subject.combine(this.map(mapFn), this.unmap(unmapFn))
 }

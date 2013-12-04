@@ -19,6 +19,8 @@ object Observable {
 }
 
 trait Observable[T] {
+  self =>
+
   def subscribe(observer: Observer[T]): Disposable
 
   def instantiate[C](aClass : Class[C]) : C
@@ -96,7 +98,6 @@ trait Observable[T] {
 
   // todo: clean this up
   def either[S](other: Observable[S]) : Observable[Either[T, S]] = {
-    var self = this
     new Observable[Either[T, S]] {
       def subscribe(observer: Observer[Either[T, S]]):Disposable = {
         var completed: Int = 0
