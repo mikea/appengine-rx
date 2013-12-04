@@ -16,6 +16,16 @@ object Observable {
   }
 
   implicit def asIterableObservable[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) = new IterableObservableHelper[T, I](observable)
+
+  class OptionObservableHelper[T, O[T] <: Option[T]](observable: Observable[O[T]]) {
+    def flatten(): Observable[T] = {
+      observable.map(new DoFn[O[T], T] {
+        def process(o: O[T], emitFn: (T) => Unit) = o.map(emitFn)
+      })
+    }
+  }
+
+  implicit def asOptionObservable[T, O[T] <: Option[T]](observable: Observable[O[T]]) = new OptionObservableHelper[T, O](observable)
 }
 
 trait Observable[T] {
@@ -60,6 +70,8 @@ trait Observable[T] {
       def instantiate[C](aClass: Class[C]) = src.instantiate(aClass)
     }
   }
+
+  def map[U, C <: (T) => U : TypeTag] : Observable[U] = map(instantiate[C])
 
   def mapMany[U](fn: (T) => Iterable[U]): Observable[U] = {
     map(new DoFn[T, U] {
