@@ -1,4 +1,4 @@
-package com.mikea.gae.rx
+package com.mikea.gae.rx.tasks
 
 import com.google.appengine.api.taskqueue.QueueFactory
 import com.google.appengine.api.taskqueue.TaskOptions

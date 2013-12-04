@@ -7,6 +7,7 @@ import java.io.Serializable
 import com.mikea.gae.rx.RxImplConfigGen.RxConfigGenStream
 import scala.collection.immutable.HashSet
 import scala.reflect.runtime.universe._
+import com.mikea.gae.rx.tasks.RxTask
 
 object RxImplConfigGen {
   class RxConfigGenStream[T] (_injector: Injector) extends Observable[T] {
@@ -30,7 +31,7 @@ class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
     new RxImplConfigGen.RxConfigGenStream[RxUploadEvent](this.injector)
   }
 
-  def taskqueue[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = ???
+  def tasks[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = ???
 
   def appVersionUpdate(): Observable[RxVersionUpdateEvent] = {
     new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this.injector)
@@ -59,4 +60,6 @@ class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
   private var taskQueues: Set[String] = new HashSet[String]
 
   def requests(pattern: String) = ???
+
+  def taskqueue(queueName: String) = ???
 }

@@ -20,6 +20,7 @@ import scala.reflect.runtime.universe._
 import javax.servlet.FilterChain
 import scala.collection.immutable.HashMap
 import com.google.appengine.api.utils.SystemProperty
+import com.mikea.gae.rx.tasks.{RxTasks, RxTask}
 
 object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"
@@ -64,19 +65,19 @@ object RxImpl {
     })
   }
 
-  def taskqueue[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = {
-    Subject.combine(taskqueueObservable(queueName), taskqueueObserver(queueName))
+  def tasks[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = {
+    Subject.combine(tasksObservable(queueName), tasksObserver(queueName))
   }
 
-  private def taskqueueObserver[T <: java.io.Serializable](queueName: String): Observer[RxTask[T]] = {
-    RxTasks.taskqueue(queueName).map((task: RxTask[T]) => task.asTaskOptions())
+  private def tasksObserver[T <: java.io.Serializable](queueName: String): Observer[RxTask[T]] = {
+    RxTasks.taskqueue(queueName).unmap((task: RxTask[T]) => task.asTaskOptions())
   }
 
-  private def taskqueueObservable[T <: java.io.Serializable : TypeTag](queueName: String): Observable[RxTask[T]] = {
-    taskqueueObservableImpl(queueName).map((event: RxHttpRequestEvent) => RxTask.fromRequest(event.request))
+  private def tasksObservable[T <: java.io.Serializable : TypeTag](queueName: String): Observable[RxTask[T]] = {
+    taskqueue(queueName).map((event: RxHttpRequestEvent) => RxTask.fromRequest(event.request))
   }
 
-  private def taskqueueObservableImpl(queueName: String): Observable[RxHttpRequestEvent] = {
+  def taskqueue(queueName: String): Observable[RxHttpRequestEvent] = {
     initIfNeeded()
 
     val observableOption: Option[PushObservable[RxHttpRequestEvent]] = tasksStreams.get(queueName)
