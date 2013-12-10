@@ -1,4 +1,4 @@
-package com.mikea.gae.rx
+package com.mikea.gae.rx.impl
 
 import com.google.appengine.api.blobstore.{BlobInfo, BlobstoreService}
 import com.google.inject.Inject
@@ -20,9 +20,10 @@ import scala.reflect.runtime.universe._
 import javax.servlet.FilterChain
 import scala.collection.immutable.HashMap
 import com.google.appengine.api.utils.SystemProperty
-import com.mikea.gae.rx.tasks.{RxTasks, RxTask}
+import com.mikea.gae.rx.tasks.RxTask
+import com.mikea.gae.rx._
 
-object RxImpl {
+private[rx] object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"
 
   private[rx] def getUploadsUrl: String = RxUrls.RX_UPLOADS_BASE
@@ -30,7 +31,7 @@ object RxImpl {
   private final val log: Logger = Loggers.getContextLogger
 }
 
-@Singleton class RxImpl @Inject()(
+@Singleton private[rx] class RxImpl @Inject()(
     _pipelines: java.util.Set[RxPipeline],
     _injector: Injector, 
     _blobstoreService: BlobstoreService,
@@ -65,17 +66,8 @@ object RxImpl {
     })
   }
 
-  def tasks[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = {
-    Subject.combine(tasksObservable(queueName), tasksObserver(queueName))
-  }
+  def tasks = RxTask.factory(this)
 
-  private def tasksObserver[T <: java.io.Serializable](queueName: String): Observer[RxTask[T]] = {
-    RxTasks.taskqueue(queueName).unmap((task: RxTask[T]) => task.asTaskOptions())
-  }
-
-  private def tasksObservable[T <: java.io.Serializable : TypeTag](queueName: String): Observable[RxTask[T]] = {
-    taskqueue(queueName).map((event: RxHttpRequestEvent) => RxTask.fromRequest(event.request))
-  }
 
   def taskqueue(queueName: String): Observable[RxHttpRequestEvent] = {
     initIfNeeded()

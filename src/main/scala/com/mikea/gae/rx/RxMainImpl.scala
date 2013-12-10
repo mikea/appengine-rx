@@ -2,7 +2,7 @@ package com.mikea.gae.rx
 
 import com.google.inject.Injector
 import javax.inject.Inject
-import java.util.Set
+import com.mikea.gae.rx.impl.RxImplConfigGen
 
 /**
  * @author mike.aizatsky@gmail.com

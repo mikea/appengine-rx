@@ -1,4 +1,4 @@
-package com.mikea.gae.rx
+package com.mikea.gae.rx.impl
 
 import javax.servlet._
 import com.google.inject.{Singleton, Inject}
@@ -7,7 +7,7 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 /**
  * @author mike.aizatsky@gmail.com
  */
-@Singleton class RxFilter  @Inject() (rx : RxImpl) extends Filter {
+@Singleton private[rx] class RxFilter  @Inject() (rx : RxImpl) extends Filter {
   def destroy(): Unit = rx.destroy()
 
   def doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain): Unit = {

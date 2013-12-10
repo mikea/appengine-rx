@@ -1,15 +1,16 @@
-package com.mikea.gae.rx
+package com.mikea.gae.rx.impl
 
 import com.google.inject.Inject
 import com.google.inject.Injector
 import com.mikea.gae.rx.base.{Subject, Observable, Observer}
 import java.io.Serializable
-import com.mikea.gae.rx.RxImplConfigGen.RxConfigGenStream
 import scala.collection.immutable.HashSet
 import scala.reflect.runtime.universe._
 import com.mikea.gae.rx.tasks.RxTask
+import com.mikea.gae.rx._
+import com.mikea.gae.rx.impl.RxImplConfigGen.RxConfigGenStream
 
-object RxImplConfigGen {
+private[rx] object RxImplConfigGen {
   class RxConfigGenStream[T] (_injector: Injector) extends Observable[T] {
     def subscribe(observer: Observer[T]) = {
       throw new UnsupportedOperationException()
@@ -19,7 +20,7 @@ object RxImplConfigGen {
   }
 }
 
-class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
+private[rx] class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
   def cron(specification: String): Observable[RxCronEvent] = {
     cronSpecifications += specification
     new RxConfigGenStream[RxCronEvent](this.injector)
@@ -62,4 +63,6 @@ class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
   def requests(pattern: String) = ???
 
   def taskqueue(queueName: String) = ???
+
+  def tasks = ???
 }
