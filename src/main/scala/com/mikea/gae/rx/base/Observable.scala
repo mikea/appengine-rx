@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions._
 import language.implicitConversions
 import language.higherKinds
 import scala.reflect.runtime.universe._
+import com.google.inject.Injector
 
 
 object Observable {
@@ -28,18 +29,10 @@ object Observable {
   implicit def asOptionObservable[T, O[T] <: Option[T]](observable: Observable[O[T]]) = new OptionObservableHelper[T, O](observable)
 }
 
-trait Observable[T] {
+trait Observable[T] extends Injectable {
   self =>
 
   def subscribe(observer: Observer[T]): Disposable
-
-  // todo: replace instantiate by injector implicit value
-  def instantiate[C](aClass : Class[C]) : C
-  def instantiate[C : TypeTag] : C = {
-    val mirror = runtimeMirror(getClass.getClassLoader)
-    val clazz: Class[C] = mirror.runtimeClass(typeOf[C].typeSymbol.asClass).asInstanceOf[Class[C]]
-    instantiate(clazz)
-  }
 
   def map[U](f: (T) => U): Observable[U] = {
     map(new DoFn[T, U] {
@@ -67,12 +60,10 @@ trait Observable[T] {
           }
         })
       }
-
-      def instantiate[C](aClass: Class[C]) = src.instantiate(aClass)
     }
   }
 
-  def map[U, C <: (T) => U : TypeTag] : Observable[U] = map(instantiate[C])
+  def map[U, C <: (T) => U](implicit injector : Injector, tag : TypeTag[C]) : Observable[U] = map(instantiate[C])
 
   def mapMany[U](fn: (T) => Iterable[U]): Observable[U] = {
     map(new DoFn[T, U] {
@@ -84,19 +75,19 @@ trait Observable[T] {
     })
   }
 
-  def mapMany[U, C <: (T) => Iterable[U] : TypeTag]: Observable[U] = mapMany(instantiate[C])
+  def mapMany[U, C <: (T) => Iterable[U]](implicit injector : Injector, tag : TypeTag[C]): Observable[U] = mapMany(instantiate[C])
 
 
-  def through[C  <: Subject[T] : TypeTag]: Observable[T] = through(instantiate[C])
+  def through[C  <: Subject[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = through(instantiate[C])
   def through(sink: Subject[T]): Observable[T] = {
     subscribe(sink)
     sink
   }
 
-  def foreach[C <: (T => Unit) : TypeTag]: Observable[T] = foreach(instantiate[C])
+  def foreach[C <: (T => Unit)](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = foreach(instantiate[C])
   def foreach(action: (T) => Unit): Observable[T] = sink(Observer.asObserver(action))
 
-  def sink[C <: Observer[T] : TypeTag]: Observable[T] = sink(instantiate[C])
+  def sink[C <: Observer[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = sink(instantiate[C])
   def sink(observer: Observer[T]): Observable[T] = {subscribe(observer); this}
 
   def filter(predicate: (T) => Boolean): Observable[T] = {
@@ -139,8 +130,6 @@ trait Observable[T] {
           def onNext(value: S) = observer.onNext(Right(value))
         }))
       }
-
-      def instantiate[C](aClass: Class[C]) = self.instantiate(aClass)
     }
   }
 }

@@ -26,9 +26,7 @@ object RxPeriodicTask {
     val taskqueueObserver: Observer[RxTask[RxPeriodicTaskPayload[T]]] = taskqueue
     val taskqueueObservable: Observable[RxTask[RxPeriodicTaskPayload[T]]] = taskqueue
 
-    val observable = new PushObservable[S] {
-      def instantiate[C](aClass: Class[C]) = taskqueue.instantiate(aClass)
-    }
+    val observable = new PushObservable[S]
 
     taskqueueObservable
       .map((task: RxTask[RxPeriodicTaskPayload[T]]) => {

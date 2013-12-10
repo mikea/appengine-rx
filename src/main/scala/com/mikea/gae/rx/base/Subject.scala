@@ -12,8 +12,6 @@ object Subject {
 
       def onCompleted() = observer.onCompleted()
 
-      def instantiate[C](aClass: Class[C]) = observable.instantiate(aClass)
-
       def subscribe(observer: Observer[T]) = observable.subscribe(observer)
 
       def onNext(value: T) = observer.onNext(value)
