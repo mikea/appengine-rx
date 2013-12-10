@@ -9,6 +9,7 @@ import scala.reflect.runtime.universe._
 import com.mikea.gae.rx.tasks.RxTask
 import com.mikea.gae.rx._
 import com.mikea.gae.rx.impl.RxImplConfigGen.RxConfigGenStream
+import com.mikea.gae.rx.events.{RxVersionUpdateEvent, RxUploadEvent, RxInitializationEvent, RxCronEvent}
 
 private[rx] object RxImplConfigGen {
   class RxConfigGenStream[T] (_injector: Injector) extends Observable[T] {

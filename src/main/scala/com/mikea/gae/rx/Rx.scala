@@ -5,6 +5,7 @@ import java.io.Serializable
 
 import scala.reflect.runtime.universe._
 import com.mikea.gae.rx.tasks.RxTasksFactory
+import com.mikea.gae.rx.events._
 
 /**
  * @author mike.aizatsky@gmail.com

@@ -22,6 +22,7 @@ import scala.collection.immutable.HashMap
 import com.google.appengine.api.utils.SystemProperty
 import com.mikea.gae.rx.tasks.RxTask
 import com.mikea.gae.rx._
+import com.mikea.gae.rx.events._
 
 private[rx] object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"

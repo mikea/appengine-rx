@@ -12,8 +12,9 @@ import com.mikea.gae.rx.base.{Observable, Observer, Subject}
 import com.mikea.gae.rx.tasks.RxTask.Builder
 import scala.concurrent.duration.Duration
 import com.mikea.gae.rx.impl.RxUrls
-import com.mikea.gae.rx.{Rx, RxHttpRequestEvent}
+import com.mikea.gae.rx.{Rx}
 import com.twitter.bijection.Bijection
+import com.mikea.gae.rx.events.RxHttpRequestEvent
 
 /**
  * @author mike.aizatsky@gmail.com

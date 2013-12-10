@@ -1,6 +1,7 @@
-package com.mikea.gae.rx
+package com.mikea.gae.rx.events
 
 import javax.servlet.http.HttpServletRequest
+import com.mikea.gae.rx.{RxHttpResponse, Rx}
 
 /**
  * @author mike.aizatsky@gmail.com

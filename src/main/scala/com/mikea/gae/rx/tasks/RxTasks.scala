@@ -11,7 +11,7 @@ import com.mikea.util.Loggers
  * @author mike.aizatsky@gmail.com
  */
 object RxTasks {
-  val LOG: Logger = Loggers.getContextLogger
+  private val LOG: Logger = Loggers.getContextLogger
 
   private def enqueue[T <: Serializable](queueName: String, taskOptions: TaskOptions): Unit = {
     LOG.fine(s"enqueue to $queueName : $taskOptions")
