@@ -4,25 +4,25 @@ import com.google.appengine.api.taskqueue.QueueFactory
 import com.google.appengine.api.taskqueue.TaskOptions
 import java.io.Serializable
 import com.mikea.gae.rx.base.Observer
+import java.util.logging.Logger
+import com.mikea.util.Loggers
 
 /**
  * @author mike.aizatsky@gmail.com
  */
 object RxTasks {
-  def enqueue[T <: Serializable](queueName: String, value: RxTask[T]): Unit = {
-    val taskOptions: TaskOptions = value.asTaskOptions()
-    enqueue(queueName, taskOptions)
-  }
+  val LOG: Logger = Loggers.getContextLogger
 
-  def enqueue[T <: Serializable](queueName: String, taskOptions: TaskOptions): Unit = {
+  private def enqueue[T <: Serializable](queueName: String, taskOptions: TaskOptions): Unit = {
+    LOG.fine(s"enqueue to $queueName : $taskOptions")
     QueueFactory.getQueue(queueName).add(taskOptions)
   }
 
-  def taskqueue(queueName: String): Observer[TaskOptions] = {
+  private[tasks] def taskqueue(queueName: String): Observer[TaskOptions] = {
     Observer.asObserver((taskOptions: TaskOptions) => enqueue(queueName, taskOptions))
   }
 
-  def taskqueue() : Observer[(String, TaskOptions)] = {
+  private[tasks] def taskqueue() : Observer[(String, TaskOptions)] = {
     Observer.asObserver((tuple: (String, TaskOptions)) => enqueue(tuple._1, tuple._2))
   }
 }
