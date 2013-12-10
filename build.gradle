@@ -7,7 +7,7 @@ repositories {
 
 dependencies {
     if (!ext.hasProperty('gaeVersion')) {
-        ext.gaeVersion = '1.8.6'
+        ext.gaeVersion = '1.8.8'
     }
 
     if (!ext.hasProperty('scalaBinaryVersion')) {
@@ -32,4 +32,6 @@ dependencies {
 
     compile 'javax.servlet:servlet-api:2.5'
     compile 'com.googlecode.objectify:objectify:4.0rc1'
+    compile 'com.twitter:bijection-core_2.10:0.6.0'
+    compile 'org.scalaz:scalaz-core_2.10:7.0.5'
 }
