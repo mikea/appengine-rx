@@ -33,6 +33,7 @@ trait Observable[T] {
 
   def subscribe(observer: Observer[T]): Disposable
 
+  // todo: replace instantiate by injector implicit value
   def instantiate[C](aClass : Class[C]) : C
   def instantiate[C : TypeTag] : C = {
     val mirror = runtimeMirror(getClass.getClassLoader)

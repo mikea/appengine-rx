@@ -1,5 +1,7 @@
 package com.mikea.gae.rx.base
 
+import com.twitter.bijection.Bijection
+
 /**
  * @author mike.aizatsky@gmail.com
  */
@@ -20,5 +22,6 @@ object Subject {
 }
 
 trait Subject[T] extends Observer[T] with Observable[T] {
-  def transform[S](mapFn: T => S, unmapFn: S => T) : Subject[S] = Subject.combine(this.map(mapFn), this.unmap(unmapFn))
+  def map[S](mapFn: T => S, unmapFn: S => T) : Subject[S] = Subject.combine(this.map(mapFn), this.unmap(unmapFn))
+  def map[S](bijection : Bijection[T, S]) : Subject[S] = Subject.combine(this.map(bijection.toFunction), this.unmap(bijection.inverse))
 }

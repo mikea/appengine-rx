@@ -1,6 +1,7 @@
 package com.mikea.gae.rx.base
 
 
+// todo: rename
 abstract class PushObservable[T] extends Observable[T] {
   def onNext(t: T): Unit = {
     for (observer <- observers) {
