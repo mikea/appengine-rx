@@ -19,7 +19,6 @@ object Subject {
   }
 }
 
-trait Subject[T] extends Observer[T] with Observable[T] {
-  def map[S](mapFn: T => S, unmapFn: S => T) : Subject[S] = Subject.combine(this.map(mapFn), this.unmap(unmapFn))
+trait Subject[T] extends Transformer[T, T] {
   def map[S](bijection : Bijection[T, S]) : Subject[S] = Subject.combine(this.map(bijection.toFunction), this.unmap(bijection.inverse))
 }

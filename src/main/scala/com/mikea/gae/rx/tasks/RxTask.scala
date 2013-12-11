@@ -8,11 +8,11 @@ import com.google.appengine.api.taskqueue.TaskOptions
 import scala.reflect.runtime.universe._
 import scala.collection.immutable.HashMap
 import java.util.regex.Pattern
-import com.mikea.gae.rx.base.{Observable, Observer, Subject}
+import com.mikea.gae.rx.base.{Transformer, Observable, Observer, Subject}
 import com.mikea.gae.rx.tasks.RxTask.Builder
 import scala.concurrent.duration.Duration
 import com.mikea.gae.rx.impl.RxUrls
-import com.mikea.gae.rx.{Rx}
+import com.mikea.gae.rx.Rx
 import com.twitter.bijection.Bijection
 import com.mikea.gae.rx.events.RxHttpRequestEvent
 
@@ -60,21 +60,21 @@ object RxTask {
       failFast(subject.asInstanceOf[Observer[RxTask[T]]]))
   }
 
-  private def tasksObserver[T <: java.io.Serializable](queueName: String): Observer[RxTask[T]] = {
-    RxTasks.taskqueue(queueName).unmap((task: RxTask[T]) => task.asTaskOptions())
+  private def tasksObserver[T <: java.io.Serializable](queue : Observer[TaskOptions]): Observer[RxTask[T]] = {
+    queue.unmap((task: RxTask[T]) => task.asTaskOptions())
   }
 
   private def tasksObservable[T <: java.io.Serializable : TypeTag](observable : Observable[RxHttpRequestEvent]): Observable[RxTask[T]] = {
     observable.map((event: RxHttpRequestEvent) => RxTask.fromRequest(event.request))
   }
 
-  private[rx] def tasks[T <: Serializable : TypeTag](queueName: String, observable : Observable[RxHttpRequestEvent]): Subject[RxTask[T]] = {
-    Subject.combine(tasksObservable(observable), tasksObserver(queueName))
+  private[rx] def tasks[T <: Serializable : TypeTag](queue : Transformer[TaskOptions, RxHttpRequestEvent]): Subject[RxTask[T]] = {
+    Subject.combine(tasksObservable(queue), tasksObserver(queue))
   }
 
   def factory(rx : Rx): RxTasksFactory =
     new RxTasksFactory {
-      def apply[T <: Serializable : TypeTag](queueName: String) = tasks[T](queueName, rx.taskqueue(queueName))
+      def apply[T <: Serializable : TypeTag](queueName: String) = tasks[T](rx.taskqueue(queueName))
     }
 
   class Builder[T <: Serializable : TypeTag] private[tasks] (var payload: Option[T],
@@ -104,6 +104,8 @@ object RxTask {
     }
   }
 
+  import scala.language.implicitConversions
+
   // todo: rewrite all these helpers using high-level poly
 
   class RxTaskObservableHelper[T <: Serializable : TypeTag](observable : Observable[RxTask[T]]) {
@@ -119,7 +121,7 @@ object RxTask {
   implicit def asRxTaskObserverHelper[T <: Serializable : TypeTag](observer : Observer[RxTask[T]]) = new RxTaskObserverHelper[T](observer)
 
   class RxTaskSubjectHelper[T <: Serializable : TypeTag](subject : Subject[RxTask[T]]) {
-    def mapPayload[S <: Serializable : TypeTag](fn : Bijection[T, S]) : Subject[RxTask[S]] = subject.map(_.map(fn.toFunction), _.map(fn.inverse))
+    def mapPayload[S <: Serializable : TypeTag](fn : Bijection[T, S]) : Subject[RxTask[S]] = subject.map(Bijection.build[RxTask[T], RxTask[S]](_.map(fn))(_.map(fn.invert)))
   }
 
   implicit def RxTaskSubjectHelper[T <: Serializable : TypeTag](subject : Subject[RxTask[T]]) = new RxTaskSubjectHelper[T](subject)

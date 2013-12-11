@@ -7,7 +7,6 @@ import com.google.inject.Singleton
 import com.mikea.util.{UriPatternMatcher, ServletStyleUriPatternMatcher, Loggers}
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import java.io.Serializable
 import java.util.logging.Logger
 import com.mikea.gae.rx.base._
 import com.google.appengine.api.memcache.{Expiration, MemcacheService}
@@ -16,13 +15,13 @@ import com.googlecode.objectify.Key
 import com.mikea.gae.rx.model.AppVersion
 import java.util
 import scala.collection.mutable
-import scala.reflect.runtime.universe._
 import javax.servlet.FilterChain
 import scala.collection.immutable.HashMap
 import com.google.appengine.api.utils.SystemProperty
-import com.mikea.gae.rx.tasks.RxTask
+import com.mikea.gae.rx.tasks.{RxTasks, RxTask}
 import com.mikea.gae.rx._
 import com.mikea.gae.rx.events._
+import com.google.appengine.api.taskqueue.TaskOptions
 
 private[rx] object RxImpl {
   private[rx] def getCronUrl(cronSpecification: String): String = s"${RxUrls.RX_CRON_URL_BASE}${cronSpecification.replaceAll(" ", "_")}"
@@ -69,50 +68,49 @@ private[rx] object RxImpl {
 
   def tasks = RxTask.factory(this)
 
-
-  def taskqueue(queueName: String): Observable[RxHttpRequestEvent] = {
+  def taskqueue(queueName: String): Transformer[TaskOptions, RxHttpRequestEvent] = {
     initIfNeeded()
 
     val observableOption: Option[PushObservable[RxHttpRequestEvent]] = tasksStreams.get(queueName)
-    if (observableOption.isDefined) {
-      return observableOption.get
+    val observable = observableOption.getOrElse(new PushObservable[RxHttpRequestEvent])
+
+    if (!observableOption.isDefined) {
+      tasksStreams = tasksStreams + (queueName -> observable)
     }
 
-    val observable: PushObservable[RxHttpRequestEvent] = newPushObservable
-    tasksStreams = tasksStreams + (queueName -> observable)
-    observable
+    Transformer.combine(RxTasks.taskqueue(queueName), observable)
   }
 
   def appVersionUpdate(): Observable[RxVersionUpdateEvent] = {
-    contextInitialized().map(new DoFn[RxInitializationEvent, RxVersionUpdateEvent] {
-      def process(rxInitializationEvent: RxInitializationEvent, emitFn: (RxVersionUpdateEvent) => Unit): Unit = {
-        val applicationVersion: String = SystemProperty.applicationVersion.get
-        RxImpl.log.info("Checking version " + applicationVersion)
+    for {
+      rxInitializationEvent <- contextInitialized()
+      if isNewAppVersion(rxInitializationEvent)
+    } yield new RxVersionUpdateEvent(SystemProperty.applicationVersion.get)
+  }
 
-        val memcacheVersion: AnyRef = _memcache.get(RxMemcacheKeys.CURRENT_VERSION)
-        if (memcacheVersion != null && memcacheVersion.toString.equals(applicationVersion)) {
-          RxImpl.log.info("Current according to memcache")
-          return
-        }
+  private def isNewAppVersion(rxInitializationEvent: RxInitializationEvent) : Boolean = {
+    val applicationVersion: String = SystemProperty.applicationVersion.get
+    RxImpl.log.info("Checking version " + applicationVersion)
 
-        val key: Key[AppVersion] = Key.create(classOf[AppVersion], applicationVersion)
-        val dbAppVersion: AppVersion = ofy.load.key(key).now()
+    val memcacheVersion: AnyRef = _memcache.get(RxMemcacheKeys.CURRENT_VERSION)
+    if (memcacheVersion != null && memcacheVersion.toString.equals(applicationVersion)) {
+      RxImpl.log.info("Current according to memcache")
+      return false
+    }
 
-        if (dbAppVersion != null) {
-          RxImpl.log.info("Current according to db")
-          _memcache.put(RxMemcacheKeys.CURRENT_VERSION, applicationVersion, Expiration.byDeltaSeconds(3600 * 24))
-          return
-        }
+    val key: Key[AppVersion] = Key.create(classOf[AppVersion], applicationVersion)
+    val dbAppVersion: AppVersion = ofy.load.key(key).now()
 
-        RxImpl.log.info("Version changed")
+    if (dbAppVersion != null) {
+      RxImpl.log.info("Current according to db")
+      _memcache.put(RxMemcacheKeys.CURRENT_VERSION, applicationVersion, Expiration.byDeltaSeconds(3600 * 24))
+      return false
+    }
 
-        // fore event
-        emitFn(new RxVersionUpdateEvent(applicationVersion))
+    ofy.save().entity(AppVersion.forVersion(applicationVersion)).now()
+    _memcache.put(RxMemcacheKeys.CURRENT_VERSION, applicationVersion, Expiration.byDeltaSeconds(3600 * 24))
 
-        ofy.save().entity(AppVersion.forVersion(applicationVersion)).now()
-        _memcache.put(RxMemcacheKeys.CURRENT_VERSION, applicationVersion, Expiration.byDeltaSeconds(3600 * 24))
-      }
-    })
+    true
   }
 
   def contextInitialized(): Observable[RxInitializationEvent] = initializationStream
@@ -125,7 +123,7 @@ private[rx] object RxImpl {
       return streamOption.get
     }
 
-    val observable: PushObservable[RxHttpRequestEvent] = newPushObservable
+    val observable = new PushObservable[RxHttpRequestEvent]
     requestStreams = requestStreams + (pattern -> observable)
     requestMatchers = requestMatchers :+ (new ServletStyleUriPatternMatcher(pattern) -> observable)
     observable
@@ -170,10 +168,6 @@ private[rx] object RxImpl {
     new RxHttpRequestEvent(this, request, new RxHttpResponse(response))
   }
 
-  def newPushObservable[T]:PushObservable[T] = new PushObservable[T] {
-    def instantiate[C](aClass: Class[C]) = _injector.getInstance(aClass)
-  }
-
   private var isInitialized: Boolean = false
 
   private var requestStreams: Map[String, PushObservable[RxHttpRequestEvent]] = HashMap()
@@ -182,5 +176,5 @@ private[rx] object RxImpl {
   // queue name => stream
   private var tasksStreams: Map[String, PushObservable[RxHttpRequestEvent]] = HashMap()
 
-  private val initializationStream: PushObservable[RxInitializationEvent] = newPushObservable
+  private val initializationStream: PushObservable[RxInitializationEvent] = new PushObservable[RxInitializationEvent]
 }

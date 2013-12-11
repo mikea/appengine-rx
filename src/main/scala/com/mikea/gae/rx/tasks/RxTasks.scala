@@ -18,7 +18,7 @@ object RxTasks {
     QueueFactory.getQueue(queueName).add(taskOptions)
   }
 
-  private[tasks] def taskqueue(queueName: String): Observer[TaskOptions] = {
+  private[rx] def taskqueue(queueName: String): Observer[TaskOptions] = {
     Observer.asObserver((taskOptions: TaskOptions) => enqueue(queueName, taskOptions))
   }
 

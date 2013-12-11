@@ -1,11 +1,10 @@
 package com.mikea.gae.rx
 
-import com.mikea.gae.rx.base.Observable
-import java.io.Serializable
+import com.mikea.gae.rx.base.{Transformer, Observable}
 
-import scala.reflect.runtime.universe._
 import com.mikea.gae.rx.tasks.RxTasksFactory
 import com.mikea.gae.rx.events._
+import com.google.appengine.api.taskqueue.TaskOptions
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -21,7 +20,7 @@ trait Rx {
 
   def upload(): Observable[RxUploadEvent]
 
-  def taskqueue(queueName: String): Observable[RxHttpRequestEvent]
+  def taskqueue(queueName: String): Transformer[TaskOptions, RxHttpRequestEvent]
 
   def tasks : RxTasksFactory
 }

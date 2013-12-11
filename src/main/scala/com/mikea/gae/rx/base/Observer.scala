@@ -22,11 +22,15 @@ object Observer {
 trait Observer[T] {
   self =>
 
+  // ----- Interface -----
+
+  def onNext(value: T): Unit
+
   def onCompleted(): Unit
 
   def onError(e: Exception): Unit
 
-  def onNext(value: T): Unit
+  // ---- Helper Methods----
 
   def unmap[S](fn: S => T): Observer[S] = {
     new Observer[S] {

@@ -1,6 +1,5 @@
 package com.mikea.gae.rx.base
 
-import com.google.common.base.Preconditions._
 import language.implicitConversions
 import language.higherKinds
 import scala.reflect.runtime.universe._
@@ -10,9 +9,10 @@ import com.google.inject.Injector
 object Observable {
   class IterableObservableHelper[T, I[T] <: Iterable[T]](observable: Observable[I[T]]) {
     def flatten(): Observable[T] = {
-      observable.map(new DoFn[I[T], T] {
-        def process(s: I[T], emitFn: (T) => Unit) = s.map(emitFn)
-      })
+      for {
+        i <- observable
+        t <- i
+      } yield t
     }
   }
 
@@ -20,9 +20,10 @@ object Observable {
 
   class OptionObservableHelper[T, O[T] <: Option[T]](observable: Observable[O[T]]) {
     def flatten(): Observable[T] = {
-      observable.map(new DoFn[O[T], T] {
-        def process(o: O[T], emitFn: (T) => Unit) = o.map(emitFn)
-      })
+      for {
+        o <- observable
+        t <- o
+      } yield t
     }
   }
 
@@ -32,32 +33,22 @@ object Observable {
 trait Observable[T] extends Injectable {
   self =>
 
+  // ----- Interface -----
+
   def subscribe(observer: Observer[T]): Disposable
 
+  // ---- Helper Methods----
+
   def map[U](f: (T) => U): Observable[U] = {
-    map(new DoFn[T, U] {
-      def process(t: T, emitFn: (U) => Unit): Unit = {
-        emitFn(f.apply(t))
-      }
-    })
-  }
-
-  def map[U](fn: DoFn[T, U]): Observable[U] = {
-    val src = this
+    // todo: one-line subscreber should be defined
     new Observable[U] {
-      def subscribe(observer: Observer[U]): Disposable = {
-        src.subscribe(new Observer[T] {
-          def onCompleted(): Unit = {
-            observer.onCompleted()
-          }
+      def subscribe(observer: Observer[U]) = {
+        self.subscribe(new Observer[T] {
+          def onError(e: Exception) = observer.onError(e)
 
-          def onError(e: Exception): Unit = {
-            observer.onError(e)
-          }
+          def onCompleted() = observer.onCompleted()
 
-          def onNext(value: T): Unit = {
-            fn.process(value, (u: U) => observer.onNext(u))
-          }
+          def onNext(value: T) = observer.onNext(f(value))
         })
       }
     }
@@ -65,18 +56,22 @@ trait Observable[T] extends Injectable {
 
   def map[U, C <: (T) => U](implicit injector : Injector, tag : TypeTag[C]) : Observable[U] = map(instantiate[C])
 
-  def mapMany[U](fn: (T) => Iterable[U]): Observable[U] = {
-    map(new DoFn[T, U] {
-      def process(value: T, emitFn: (U) => Unit) = {
-        for (u <- checkNotNull(fn.apply(value))) {
-          emitFn(u)
-        }
+  def flatMap[U](fn: (T) => Iterable[U]): Observable[U] = {
+    // todo: one-line subscriber should be defined
+    new Observable[U] {
+      def subscribe(observer: Observer[U]) = {
+        self.subscribe(new Observer[T] {
+          def onError(e: Exception) = observer.onError(e)
+
+          def onCompleted() = observer.onCompleted()
+
+          def onNext(value: T) = fn(value).foreach(observer.onNext)
+        })
       }
-    })
+    }
   }
 
-  def mapMany[U, C <: (T) => Iterable[U]](implicit injector : Injector, tag : TypeTag[C]): Observable[U] = mapMany(instantiate[C])
-
+  def flatMap[U, C <: (T) => Iterable[U]](implicit injector : Injector, tag : TypeTag[C]): Observable[U] = flatMap(instantiate[C])
 
   def through[C  <: Subject[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = through(instantiate[C])
   def through(sink: Subject[T]): Observable[T] = {
@@ -90,14 +85,19 @@ trait Observable[T] extends Injectable {
   def sink[C <: Observer[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = sink(instantiate[C])
   def sink(observer: Observer[T]): Observable[T] = {subscribe(observer); this}
 
-  def filter(predicate: (T) => Boolean): Observable[T] = {
-    map(new DoFn[T, T] {
-      def process(value: T, emitFn: (T) => Unit) = {
-        if (predicate.apply(value)) {
-          emitFn(value)
-        }
+  def withFilter(predicate: (T) => Boolean): Observable[T] = {
+    // todo: one-line subscriber should be defined
+    new Observable[T] {
+      def subscribe(observer: Observer[T]) = {
+        self.subscribe(new Observer[T] {
+          def onError(e: Exception) = observer.onError(e)
+
+          def onCompleted() = observer.onCompleted()
+
+          def onNext(value: T) =  if (predicate(value)) observer.onNext(value)
+        })
       }
-    })
+    }
   }
 
   // todo: clean this up
