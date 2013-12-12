@@ -39,7 +39,7 @@ object RxPeriodicTask {
 
     val observer : Observer[S] = taskqueueObserver.unmap((s : S) => {
       val payload: RxPeriodicTaskPayload[T] = new RxPeriodicTaskPayload[T](bijection.invert(s), baseNameFn(s), 0)
-      RxTask.newBuilder[RxPeriodicTaskPayload[T]].payload(payload).name(payload.name).build
+      RxTask(payload = payload, name = Some(payload.name))
     })
 
     Subject.combine(observable, observer)
@@ -51,11 +51,13 @@ object RxPeriodicTask {
   }
 
   private def computeContinuation[T <: Serializable : TypeTag](task: RxTask[RxPeriodicTaskPayload[T]], duration : Duration) : RxTask[RxPeriodicTaskPayload[T]] = {
-    val payload: RxPeriodicTaskPayload[T] = new RxPeriodicTaskPayload[T](task.payload.payload, task.payload.baseName, task.payload.generation + 1)
+    val newPayload: RxPeriodicTaskPayload[T] = new RxPeriodicTaskPayload[T](task.payload.payload, task.payload.baseName, task.payload.generation + 1)
 
     val countdownSec = duration.toUnit(TimeUnit.SECONDS) * (1.0 + new Random().nextFloat() / 10.0) // up to 10% of randomness
 
-    task.toBuilder.payload(payload).countdown(Duration.create(countdownSec, TimeUnit.SECONDS)).name(payload.name).build
+    task.copy(payload = newPayload,
+              countdown = Some(Duration.create(countdownSec, TimeUnit.SECONDS)),
+              name = Some(newPayload.name))
   }
 }
 

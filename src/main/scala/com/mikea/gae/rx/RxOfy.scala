@@ -3,6 +3,8 @@ package com.mikea.gae.rx
 import com.googlecode.objectify.Key
 import com.googlecode.objectify.Result
 import com.googlecode.objectify.ObjectifyService.ofy
+import scala.reflect.runtime.universe._
+import com.mikea.util.TypeTags
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -17,8 +19,12 @@ object RxOfy {
     ofy.save.entities(values.asJava).now().asScala.toMap
   }
 
-  def loadAll[T, S](entityClass: Class[T]) : (S) => List[T] = (_s) => {
+  def loadAll[T : TypeTag] : (AnyRef) => List[T] = (s) => {
+    val clazz: Class[T] = TypeTags.getClazz[T]
+
     import scala.collection.JavaConverters._
-    ofy.load.`type`(entityClass).list.asScala.toList
+    ofy.load.`type`(clazz).list.asScala.toList
   }
+
+  def createKey[T : TypeTag](name: String): Key[T] = Key.create(TypeTags.getClazz[T], name)
 }

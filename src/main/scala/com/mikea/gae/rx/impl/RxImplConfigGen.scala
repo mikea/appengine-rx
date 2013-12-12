@@ -16,8 +16,6 @@ private[rx] object RxImplConfigGen {
     def subscribe(observer: Observer[T]) = {
       throw new UnsupportedOperationException()
     }
-
-    def instantiate[C](aClass: Class[C]) = _injector.getInstance(aClass)
   }
 }
 

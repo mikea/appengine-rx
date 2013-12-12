@@ -4,6 +4,7 @@ import language.implicitConversions
 import language.higherKinds
 import scala.reflect.runtime.universe._
 import com.google.inject.Injector
+import scalaz.Alpha.E
 
 
 object Observable {
@@ -40,7 +41,7 @@ trait Observable[T] extends Injectable {
   // ---- Helper Methods----
 
   def map[U](f: (T) => U): Observable[U] = {
-    // todo: one-line subscreber should be defined
+    // todo: one-line subscriber should be defined
     new Observable[U] {
       def subscribe(observer: Observer[U]) = {
         self.subscribe(new Observer[T] {
@@ -71,7 +72,7 @@ trait Observable[T] extends Injectable {
     }
   }
 
-  def flatMap[U, C <: (T) => Iterable[U]](implicit injector : Injector, tag : TypeTag[C]): Observable[U] = flatMap(instantiate[C])
+  def flatMap[C <: (T) => Iterable[U], U](implicit injector : Injector, tag : TypeTag[C]): Observable[U] = flatMap(instantiate[C])
 
   def through[C  <: Subject[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = through(instantiate[C])
   def through(sink: Subject[T]): Observable[T] = {
