@@ -4,7 +4,6 @@ import language.implicitConversions
 import language.higherKinds
 import scala.reflect.runtime.universe._
 import com.google.inject.Injector
-import scalaz.Alpha.E
 
 
 object Observable {
@@ -133,4 +132,6 @@ trait Observable[T] extends Injectable {
       }
     }
   }
+
+  def >>>[S](tr : Transformer[T, S]) : Observable[S] = ???
 }
