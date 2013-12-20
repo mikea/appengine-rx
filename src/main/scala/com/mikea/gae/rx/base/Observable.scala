@@ -4,6 +4,7 @@ import language.implicitConversions
 import language.higherKinds
 import scala.reflect.runtime.universe._
 import com.google.inject.Injector
+import com.mikea.util.TypeNeq.=!=
 
 
 object Observable {
@@ -54,7 +55,7 @@ trait Observable[T] extends Injectable {
     }
   }
 
-  def map[U, C <: (T) => U](implicit injector : Injector, tag : TypeTag[C]) : Observable[U] = map(instantiate[C])
+  def map[U, C <: (T) => U](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing) : Observable[U] = map(instantiate[C])
 
   def flatMap[U](fn: (T) => Iterable[U]): Observable[U] = {
     // todo: one-line subscriber should be defined
@@ -71,18 +72,18 @@ trait Observable[T] extends Injectable {
     }
   }
 
-  def flatMap[C <: (T) => Iterable[U], U](implicit injector : Injector, tag : TypeTag[C]): Observable[U] = flatMap(instantiate[C])
+  def flatMap[C <: (T) => Iterable[U], U](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[U] = flatMap(instantiate[C])
 
-  def through[C  <: Subject[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = through(instantiate[C])
+  def through[C  <: Subject[T]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = through(instantiate[C])
   def through(sink: Subject[T]): Observable[T] = {
     subscribe(sink)
     sink
   }
 
-  def foreach[C <: (T => Unit)](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = foreach(instantiate[C])
+  def foreach[C <: (T => Unit)](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = foreach(instantiate[C])
   def foreach(action: (T) => Unit): Observable[T] = sink(Observer.asObserver(action))
 
-  def sink[C <: Observer[T]](implicit injector : Injector, tag : TypeTag[C]): Observable[T] = sink(instantiate[C])
+  def sink[C <: Observer[T]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = sink(instantiate[C])
   def sink(observer: Observer[T]): Observable[T] = {subscribe(observer); this}
 
   def withFilter(predicate: (T) => Boolean): Observable[T] = {
@@ -133,5 +134,54 @@ trait Observable[T] extends Injectable {
     }
   }
 
-  def >>>[S](tr : Transformer[T, S]) : Observable[S] = ???
+  def >>>[S](tr : Transformer[T, S]) : Observable[S] = {
+    // todo: should this be possible without subscription, i.e. without side effect?
+    this.subscribe(tr) // todo: dispose?
+    tr
+  }
+
+  /**
+   * Splits into (p == true, p == false) streams.
+   */
+  def split(predicate : (T) => Boolean) : (Observable[T], Observable[T]) = {
+    val push1 = new PushObservable[T]
+    val push2 = new PushObservable[T]
+
+    this.subscribe(new Observer[T] {
+      def onError(e: Exception) = {
+        push1.onError(e)
+        push2.onError(e)
+      }
+
+      def onCompleted() = {
+        push1.onCompleted()
+        push2.onCompleted()
+      }
+
+      def onNext(t: T) = {
+        if (predicate(t)) {
+          push1.onNext(t)
+        } else {
+          push2.onNext(t)
+        }
+      }
+    })
+
+    (push1, push2)
+  }
+  /**
+   * Splits into (p == true, p == false) streams.
+   */
+  def split(predicate : PartialFunction[T, Boolean]) : (Observable[T], Observable[T]) = split((t) => predicate.isDefinedAt(t) && predicate(t))
+
+  /**
+   * splits traffic when partial function is defined
+   */
+  def mapSplit[S](fn : PartialFunction[T, S], observer : Observer[S]) : Observable[T] = {
+    val (defined, undefined) = split(fn.isDefinedAt _)
+
+    // todo: should this be possible without subscription, i.e. without side effect?
+    defined.map(fn).subscribe(observer)    // todo: dispose?
+    undefined
+  }
 }

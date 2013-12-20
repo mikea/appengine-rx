@@ -65,4 +65,5 @@ class ServletStyleUriPatternMatcher(_pattern: String) extends UriPatternMatcher 
 
   def getPatternType = UriPatternType.SERVLET
 
+  override def toString = s"uriMatcher($pattern)"
 }

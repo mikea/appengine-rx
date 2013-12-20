@@ -155,10 +155,13 @@ private[rx] object RxImpl {
       val observable: PushObservable[RxHttpRequestEvent] = pair._2
 
       if (matcher.matches(requestUri)) {
+        RxImpl.log.fine(s"Match found: $matcher $observable")
         observable.onNext(newRxHttpRequestEvent(request, response))
         return
       }
     }
+
+    RxImpl.log.fine(s"filter for $requestUri found. matchers=$requestMatchers")
 
     chain.doFilter(request, response)
   }
