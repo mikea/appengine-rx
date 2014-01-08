@@ -8,25 +8,28 @@ import com.google.appengine.api.taskqueue.TaskOptions
 import scala.reflect.runtime.universe._
 import scala.collection.immutable.HashMap
 import java.util.regex.Pattern
-import com.mikea.gae.rx.base.{Transformer, Observable, Observer, Subject}
+import com.mikea.gae.rx.base._
 import scala.concurrent.duration.Duration
 import com.mikea.gae.rx.impl.RxUrls
-import com.mikea.gae.rx.Rx
 import com.twitter.bijection.Bijection
-import com.mikea.gae.rx.events.RxHttpRequestEvent
+import com.mikea.gae.rx.events.RxHttpRequest
+import com.mikea.gae.rx.base.Transformer
+import com.mikea.gae.rx.Rx
 
 /**
  * @author mike.aizatsky@gmail.com
  */
 object RxTask {
+  def failFast(factory: SubjectFactory[RxTask]): SubjectFactory[RxTask] = new SubjectFactory[RxTask] {
+    def apply[T]() : Subject[RxTask[T]] = failFast(factory[T]())
+  }
+
+  def payloadBijection[S] () : Bijection[S, RxTask[S]] = Bijection.build((s: S) => new RxTask(s))((task: RxTask[S]) => task.payload)
+
   private val TASK_NAME_PREFIX: String = "1/"
   private val ILLEGAL_TASK_CHARACTERS: Pattern = Pattern.compile("[^a-zA-Z0-9_-]")
 
-  private def fromRequest[T <: Serializable : TypeTag](request: HttpServletRequest): RxTask[T] = {
-    if (typeOf[T] <:< typeOf[Map[String, String]]) {
-      throw new UnsupportedOperationException()
-    }
-
+  private def fromRequest[T](request: HttpServletRequest): RxTask[T] = {
     for (ois <- managed(new ObjectInputStream(request.getInputStream))) {
       val payload: T = ois.readObject.asInstanceOf[T]
 
@@ -44,32 +47,34 @@ object RxTask {
     throw new IOException()
   }
 
-  def failFast[T <: Serializable : TypeTag](observer: Observer[RxTask[T]]) : Observer[RxTask[T]] = {
+  def failFast[T](observer: Observer[RxTask[T]]) : Observer[RxTask[T]] = {
     observer.unmap((task: RxTask[T]) => task.copy(headers = task.headers + ("X-AppEngine-FailFast" -> "True")))
   }
 
-  def failFast[T <: Serializable : TypeTag](subject: Subject[RxTask[T]]) : Subject[RxTask[T]] = {
+  def failFast[T](subject: Subject[RxTask[T]]) : Subject[RxTask[T]] = {
     Subject.combine(
       subject,
       failFast(subject.asInstanceOf[Observer[RxTask[T]]]))
   }
 
-  private def tasksObserver[T <: java.io.Serializable](queue : Observer[TaskOptions]): Observer[RxTask[T]] = {
+  private def tasksObserver[T](queue : Observer[TaskOptions]): Observer[RxTask[T]] = {
     queue.unmap((task: RxTask[T]) => task.asTaskOptions())
   }
 
-  private def tasksObservable[T <: java.io.Serializable : TypeTag](observable : Observable[RxHttpRequestEvent]): Observable[RxTask[T]] = {
-    observable.map((event: RxHttpRequestEvent) => RxTask.fromRequest(event.request))
+  private def tasksObservable[T](observable : Observable[RxHttpRequest]): Observable[RxTask[T]] = {
+    observable.map((event: RxHttpRequest) => RxTask.fromRequest(event.httpRequest))
   }
 
-  private[rx] def tasks[T <: Serializable : TypeTag](queue : Transformer[TaskOptions, RxHttpRequestEvent]): Subject[RxTask[T]] = {
+  private[rx] def tasks[T](queue : Transformer[TaskOptions, RxHttpRequest]): Subject[RxTask[T]] = {
     Subject.combine(tasksObservable(queue), tasksObserver(queue))
   }
 
-  def factory(rx : Rx): RxTasksFactory =
-    new RxTasksFactory {
-      def apply[T <: Serializable : TypeTag](queueName: String) = tasks[T](rx.taskqueue(queueName))
-    }
+  def tasks[T](queueName: String)(implicit rx : Rx) : Subject[RxTask[T]] = tasks(rx.taskqueue(queueName))
+
+  // todo this factory stuff doesn't look neat, find a better representation
+  def tasksFactory(queueName: String)(implicit rx : Rx) : SubjectFactory[RxTask] = new SubjectFactory[RxTask] {
+    def apply[T]() = tasks(queueName)
+  }
 
   import scala.language.implicitConversions
 
@@ -92,17 +97,15 @@ object RxTask {
   }
 
   implicit def RxTaskSubjectHelper[T <: Serializable : TypeTag](subject : Subject[RxTask[T]]) = new RxTaskSubjectHelper[T](subject)
+
+  def throughTasks[T](subjects : SubjectFactory[RxTask]) = subjects.through(RxTask.payloadBijection[T]())
 }
 
-case class RxTask[T <: Serializable : TypeTag](payload: T,
-                                               headers: Map[String, String] = Map(),
-                                               name: Option[String] = None,
-                                               countdown: Option[Duration] = None) {
+case class RxTask[T](payload: T,
+                     headers: Map[String, String] = Map(),
+                     name: Option[String] = None,
+                     countdown: Option[Duration] = None) {
   private def toPayLoad: Array[Byte] = {
-    if (typeOf[T] <:< typeOf[Map[String, String]]) {
-      throw new UnsupportedOperationException()
-    }
-
     import resource._
     for (baos <- managed(new ByteArrayOutputStream)) {
       for (oos <- managed(new ObjectOutputStream(baos))) {
@@ -135,4 +138,9 @@ case class RxTask[T <: Serializable : TypeTag](payload: T,
   }
 
   def map[S <: Serializable : TypeTag](fn : T => S) : RxTask[S] = copy(payload = fn(this.payload))
+}
+
+// todo: the existence of the factory doesn't seem to be like a good thing
+trait RxTasksFactory {
+  def apply(queueName : String) : SubjectFactory[RxTask]
 }

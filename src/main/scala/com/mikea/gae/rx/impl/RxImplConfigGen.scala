@@ -2,36 +2,31 @@ package com.mikea.gae.rx.impl
 
 import com.google.inject.Inject
 import com.google.inject.Injector
-import com.mikea.gae.rx.base.{Subject, Observable, Observer}
-import java.io.Serializable
+import com.mikea.gae.rx.base.{TransformerSlot, Observable, Observer}
 import scala.collection.immutable.HashSet
-import scala.reflect.runtime.universe._
-import com.mikea.gae.rx.tasks.RxTask
 import com.mikea.gae.rx._
-import com.mikea.gae.rx.impl.RxImplConfigGen.RxConfigGenStream
 import com.mikea.gae.rx.events.{RxVersionUpdateEvent, RxUploadEvent, RxInitializationEvent, RxCronEvent}
 
 private[rx] object RxImplConfigGen {
   class RxConfigGenStream[T] (_injector: Injector) extends Observable[T] {
-    def subscribe(observer: Observer[T]) = {
-      throw new UnsupportedOperationException()
-    }
+    def subscribe[S >: T](observer: Observer[S]) = ???
   }
 }
 
 private[rx] class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
-  def cron(specification: String): Observable[RxCronEvent] = {
+  def cron(specification: String): TransformerSlot[RxCronEvent, RxHttpResponse] = {
     cronSpecifications += specification
-    new RxConfigGenStream[RxCronEvent](this.injector)
+//    new RxConfigGenStream[RxCronEvent](this.injector)
+    ???
   }
 
   def injector = _injector
 
-  def upload(): Observable[RxUploadEvent] = {
-    new RxImplConfigGen.RxConfigGenStream[RxUploadEvent](this.injector)
+  def upload(): TransformerSlot[RxUploadEvent, RxHttpResponse] = {
+//    new RxImplConfigGen.RxConfigGenStream[RxUploadEvent](this.injector)
+    ???
   }
 
-  def tasks[T <: Serializable : TypeTag](queueName: String): Subject[RxTask[T]] = ???
 
   def appVersionUpdate(): Observable[RxVersionUpdateEvent] = {
     new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this.injector)
@@ -62,6 +57,4 @@ private[rx] class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
   def requests(pattern: String) = ???
 
   def taskqueue(queueName: String) = ???
-
-  def tasks = ???
 }

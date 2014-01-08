@@ -1,28 +1,29 @@
 package com.mikea.gae.rx
 
+import com.mikea.gae.rx.base.Transformer
+import com.mikea.gae.rx.events.RxHttpRequest
 import javax.servlet.http.HttpServletResponse
 
-/**
- * @author mike.aizatsky@gmail.com
- */
-class RxHttpResponse(response: HttpServletResponse) {
-  private var _hasResponse: Boolean = false
+abstract class RxHttpResponse(val request : RxHttpRequest) {
+  protected def render(httpResponse : HttpServletResponse): Unit
 
-  def hasResponse = _hasResponse
+  private[rx] def render() : Unit = render(request.httpResponse)
+}
 
-  def sendRedirect(url: String): Unit = {
-    _hasResponse = true
-    response.sendRedirect(url)
+case class RxHttpErrorResponse(errorCode: Int, message: String, override val request : RxHttpRequest) extends RxHttpResponse(request) {
+  protected def render(httpResponse: HttpServletResponse) = httpResponse.sendError(errorCode, message)
+}
+
+case class RxHttpOkResponse(body : String, override val request : RxHttpRequest) extends RxHttpResponse(request) {
+  protected def render(httpResponse: HttpServletResponse) = {
+    httpResponse.setStatus(200)
+    httpResponse.getOutputStream.print(body)
   }
+}
+case class RxHttpRedirectResponse(url: String, override val request : RxHttpRequest) extends RxHttpResponse(request) {
+  protected def render(httpResponse: HttpServletResponse) = httpResponse.sendRedirect(url)
+}
 
-  def sendError(errorCode: Int, message: String): Unit = {
-    _hasResponse = true
-    response.sendError(errorCode, message)
-  }
-
-  def sendOk(): Unit = {
-    _hasResponse = true
-    response.sendError(200)
-  }
-
+object RxHttpResponse {
+  def ok[Event <: RxHttpRequest](body : String) : Transformer[Event, RxHttpResponse] = Transformer.map((evt: Event) => new RxHttpOkResponse(body, evt))
 }

@@ -8,17 +8,15 @@ import com.mikea.gae.rx.impl.RxImplConfigGen
  * @author mike.aizatsky@gmail.com
  */
 object RxMainImpl {
-  def main(injector: Injector, args: Array[String]) {
+  def main(injector: Injector, args: Array[String]): Unit = {
     injector.getInstance(classOf[RxMainImpl]).run(args)
   }
 }
 
-class RxMainImpl @Inject()(_pipelines: java.util.Set[RxPipeline], _rx: RxImplConfigGen) {
-  private def run(args: Array[String]) {
+class RxMainImpl @Inject()(pipelines: java.util.Set[RxPipeline], rx: RxImplConfigGen) {
+  private def run(args: Array[String]): Unit = {
     import scala.collection.JavaConversions._
-    for (pipeline <- _pipelines) {
-      pipeline.init(_rx)
-    }
-    _rx.generateConfigs()
+    pipelines.map(_.init())
+    rx.generateConfigs()
   }
 }

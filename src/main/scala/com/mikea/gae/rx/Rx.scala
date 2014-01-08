@@ -1,8 +1,7 @@
 package com.mikea.gae.rx
 
-import com.mikea.gae.rx.base.{Transformer, Observable}
+import com.mikea.gae.rx.base._
 
-import com.mikea.gae.rx.tasks.RxTasksFactory
 import com.mikea.gae.rx.events._
 import com.google.appengine.api.taskqueue.TaskOptions
 
@@ -10,17 +9,15 @@ import com.google.appengine.api.taskqueue.TaskOptions
  * @author mike.aizatsky@gmail.com
  */
 trait Rx {
-  def requests(pattern: String): Observable[RxHttpRequestEvent]
-
-  def cron(specification: String): Observable[RxCronEvent]
-
   def appVersionUpdate(): Observable[RxVersionUpdateEvent]
 
   def contextInitialized(): Observable[RxInitializationEvent]
 
-  def upload(): Observable[RxUploadEvent]
+  def requests(pattern: String): TransformerSlot[RxHttpRequest, RxHttpResponse]
 
-  def taskqueue(queueName: String): Transformer[TaskOptions, RxHttpRequestEvent]
+  def cron(specification: String): TransformerSlot[RxCronEvent, RxHttpResponse]
 
-  def tasks : RxTasksFactory
-}
+  def upload(): TransformerSlot[RxUploadEvent, RxHttpResponse]
+
+  def taskqueue(queueName: String): Transformer[TaskOptions, RxHttpRequest]
+}                         `
