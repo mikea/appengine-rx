@@ -12,13 +12,14 @@ object Subject {
 
       def onCompleted() = observer.onCompleted()
 
-      def subscribe(observer: Observer[T]) = observable.subscribe(observer)
-
       def onNext(value: T) = observer.onNext(value)
+
+      def subscribe[S >: T](observer: Observer[S]) = observable.subscribe(observer)
     }
   }
 }
 
+// todo: it is not clear if we need this. Maybe use Transformer[T, T] everywhere?
 trait Subject[T] extends Transformer[T, T] {
   def map[S](bijection : Bijection[T, S]) : Subject[S] = Subject.combine(this.map(bijection.toFunction), this.unmap(bijection.inverse))
 }

@@ -21,15 +21,14 @@ class PushObservable[T] extends Observable[T] {
     }
   }
 
-  def subscribe(observer: Observer[T]): Disposable = {
+  def subscribe[S >: T](observer: Observer[S]) = {
     observers = observers :+ observer
 
     new Disposable {
-      def dispose(): Unit = {
-        throw new UnsupportedOperationException
-      }
+      def dispose(): Unit = ???
     }
   }
 
   private var observers: Vector[Observer[T]] = Vector()
+
 }

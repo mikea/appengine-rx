@@ -12,9 +12,9 @@ object Transformer extends Injectable {
 
       def onCompleted() = observer.onCompleted()
 
-      def subscribe(observer: Observer[Out]) = observable.subscribe(observer)
-
       def onNext(value: In) = observer.onNext(value)
+
+      def subscribe[S >: Out](observer: Observer[S]) = observable.subscribe(observer)
     }
   }
 
@@ -51,15 +51,22 @@ object Transformer extends Injectable {
   def foreach[T, C <: (T => Unit)](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Transformer[T, T] = foreach(instantiate[C])
 }
 
-trait Transformer[In, Out] extends Observer[In] with Observable[Out] {
+trait Transformer[-In, +Out] extends Observer[In] with Observable[Out] {
   def mapIn[NewIn](fn : NewIn => In) : Transformer[NewIn, Out] = map(fn, identity[Out])
   def mapOut[NewOut](fn : Out => NewOut) : Transformer[In, NewOut] = map(identity[In], fn)
 
   def map[NewIn, NewOut](mapInFn : NewIn => In, mapOutFn: Out => NewOut) : Transformer[NewIn, NewOut] = Transformer.combine(this.unmap(mapInFn), this.map(mapOutFn))
 
-  override def >>>[NewOut](t : Transformer[Out, NewOut]) : Transformer[In, NewOut] = {
+  def >>>[NewOut](t : Transformer[Out, NewOut]) : Transformer[In, NewOut] = {
     // todo: should this be possible without subscription, i.e. without side effect?
     this.subscribe(t)  // todo: dispose?
     Transformer.combine(this, t)
   }
+
+  def connect(t : Transformer[Out, In]) = {
+    // todo: should this be possible without subscription, i.e. without side effect?
+    this.subscribe(t)  // todo: dispose?
+    t.subscribe(this)  // todo: dispose?
+  }
 }
+
