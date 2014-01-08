@@ -31,19 +31,19 @@ object Observable {
   implicit def asOptionObservable[T, O[T] <: Option[T]](observable: Observable[O[T]]) = new OptionObservableHelper[T, O](observable)
 }
 
-trait Observable[T] extends Injectable {
+trait Observable[+T] extends Injectable {
   self =>
 
   // ----- Interface -----
 
-  def subscribe(observer: Observer[T]): Disposable
+  def subscribe[S >: T](observer: Observer[S]): Disposable
 
   // ---- Helper Methods----
 
   def map[U](f: (T) => U): Observable[U] = {
     // todo: one-line subscriber should be defined
     new Observable[U] {
-      def subscribe(observer: Observer[U]) = {
+      def subscribe[S >: U](observer: Observer[S]) = {
         self.subscribe(new Observer[T] {
           def onError(e: Exception) = observer.onError(e)
 
@@ -60,7 +60,7 @@ trait Observable[T] extends Injectable {
   def flatMap[U](fn: (T) => Iterable[U]): Observable[U] = {
     // todo: one-line subscriber should be defined
     new Observable[U] {
-      def subscribe(observer: Observer[U]) = {
+      def subscribe[S >: U](observer: Observer[S]) = {
         self.subscribe(new Observer[T] {
           def onError(e: Exception) = observer.onError(e)
 
@@ -74,8 +74,8 @@ trait Observable[T] extends Injectable {
 
   def flatMap[C <: (T) => Iterable[U], U](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[U] = flatMap(instantiate[C])
 
-  def through[C  <: Subject[T]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = through(instantiate[C])
-  def through(sink: Subject[T]): Observable[T] = {
+  def through[S >: T, C  <: Subject[S]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[S] = through(instantiate[C])
+  def through[S >: T] (sink: Subject[S]): Observable[S] = {
     subscribe(sink)
     sink
   }
@@ -83,13 +83,13 @@ trait Observable[T] extends Injectable {
   def foreach[C <: (T => Unit)](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = foreach(instantiate[C])
   def foreach(action: (T) => Unit): Observable[T] = sink(Observer.asObserver(action))
 
-  def sink[C <: Observer[T]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = sink(instantiate[C])
-  def sink(observer: Observer[T]): Observable[T] = {subscribe(observer); this}
+  def sink[S >: T, C <: Observer[S]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = sink(instantiate[C])
+  def sink[S >: T](observer: Observer[S]): Observable[T] = {subscribe(observer); this}
 
   def withFilter(predicate: (T) => Boolean): Observable[T] = {
     // todo: one-line subscriber should be defined
     new Observable[T] {
-      def subscribe(observer: Observer[T]) = {
+      def subscribe[S >: T](observer: Observer[S]) = {
         self.subscribe(new Observer[T] {
           def onError(e: Exception) = observer.onError(e)
 
@@ -104,7 +104,7 @@ trait Observable[T] extends Injectable {
   // todo: clean this up
   def either[S](other: Observable[S]) : Observable[Either[T, S]] = {
     new Observable[Either[T, S]] {
-      def subscribe(observer: Observer[Either[T, S]]):Disposable = {
+      def subscribe[E >: Either[T, S]](observer: Observer[E]) = {
         var completed: Int = 0
 
         self.subscribe(new Observer[T] {
@@ -134,7 +134,7 @@ trait Observable[T] extends Injectable {
     }
   }
 
-  def >>>[S](tr : Transformer[T, S]) : Observable[S] = {
+  def >>>[T1 >: T, S](tr : Transformer[T1, S]) : Observable[S] = {
     // todo: should this be possible without subscription, i.e. without side effect?
     this.subscribe(tr) // todo: dispose?
     tr

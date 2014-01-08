@@ -19,7 +19,7 @@ object Observer {
   }
 }
 
-trait Observer[T] {
+trait Observer[-T] {
   self =>
 
   // ----- Interface -----
