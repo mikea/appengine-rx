@@ -20,4 +20,4 @@ trait Rx {
   def upload(): TransformerSlot[RxUploadEvent, RxHttpResponse]
 
   def taskqueue(queueName: String): Transformer[TaskOptions, RxHttpRequest]
-}                         `
+}
