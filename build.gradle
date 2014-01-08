@@ -18,6 +18,8 @@ dependencies {
         ext.scalaVersion = '2.10.3'
     }
 
+    compile project(':appengine-java-tools')
+
     // appengine libraries
     compile "com.google.appengine:appengine-api-1.0-sdk:$gaeVersion"
 
