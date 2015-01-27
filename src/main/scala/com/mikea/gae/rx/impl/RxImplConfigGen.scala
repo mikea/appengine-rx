@@ -27,7 +27,6 @@ private[rx] class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
     ???
   }
 
-
   def appVersionUpdate(): Observable[RxVersionUpdateEvent] = {
     new RxImplConfigGen.RxConfigGenStream[RxVersionUpdateEvent](this.injector)
   }
@@ -57,4 +56,13 @@ private[rx] class RxImplConfigGen @Inject() (_injector: Injector) extends Rx {
   def requests(pattern: String) = ???
 
   def taskqueue(queueName: String) = ???
+
+  def requests() = ???
+
+  def taskqueue() = ???
+
+  /**
+   * Enqueue new tasks in taskqueue.
+   */
+  def enqueue(queueName: String) = ???
 }

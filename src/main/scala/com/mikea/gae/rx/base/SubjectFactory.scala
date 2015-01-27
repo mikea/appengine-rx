@@ -6,6 +6,7 @@ import com.twitter.bijection.Bijection
  * @author mike.aizatsky@gmail.com
  */
 import scala.language.higherKinds
+import scala.language.implicitConversions
 
 trait SubjectFactory[M[_]] {
   def apply[T]() : Subject[M[T]]
@@ -13,6 +14,6 @@ trait SubjectFactory[M[_]] {
   def through[T](mapping : Bijection[T, M[T]]) : Subject[T] = {
     val self = this
     val subject: Subject[M[T]] = self[T]()
-    subject.map(mapping.inverse)
+    subject.bimap(mapping.inverse)
   }
 }

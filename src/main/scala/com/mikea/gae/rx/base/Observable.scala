@@ -86,7 +86,7 @@ trait Observable[+T] extends Injectable {
   def sink[S >: T, C <: Observer[S]](implicit injector : Injector, tag : TypeTag[C], d : C =!= Nothing): Observable[T] = sink(instantiate[C])
   def sink[S >: T](observer: Observer[S]): Observable[T] = {subscribe(observer); this}
 
-  def withFilter(predicate: (T) => Boolean): Observable[T] = {
+  def filter(predicate: (T) => Boolean): Observable[T] = {
     // todo: one-line subscriber should be defined
     new Observable[T] {
       def subscribe[S >: T](observer: Observer[S]) = {
@@ -100,6 +100,8 @@ trait Observable[+T] extends Injectable {
       }
     }
   }
+
+  def withFilter(predicate: (T) => Boolean): Observable[T] = filter(predicate)
 
   // todo: clean this up
   def either[S](other: Observable[S]) : Observable[Either[T, S]] = {

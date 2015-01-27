@@ -13,11 +13,23 @@ trait Rx {
 
   def contextInitialized(): Observable[RxInitializationEvent]
 
+  def requests(): TransformerSlot[RxHttpRequest, RxHttpResponse]
   def requests(pattern: String): TransformerSlot[RxHttpRequest, RxHttpResponse]
+
+  // --------- Specializations of request processing
 
   def cron(specification: String): TransformerSlot[RxCronEvent, RxHttpResponse]
 
   def upload(): TransformerSlot[RxUploadEvent, RxHttpResponse]
 
-  def taskqueue(queueName: String): Transformer[TaskOptions, RxHttpRequest]
+  def taskqueue(): TransformerSlot[RxTaskEvent, RxHttpResponse]
+  def taskqueue(queueName: String): TransformerSlot[RxTaskEvent, RxHttpResponse]
+
+
+  // --------- Services
+
+  /**
+   * Enqueue new tasks in taskqueue.
+   */
+  def enqueue(queueName : String) : Observer[TaskOptions]
 }

@@ -7,7 +7,10 @@ import javax.servlet.http.HttpServletResponse
 abstract class RxHttpResponse(val request : RxHttpRequest) {
   protected def render(httpResponse : HttpServletResponse): Unit
 
-  private[rx] def render() : Unit = render(request.httpResponse)
+  private[rx] def render() : Unit = {
+    render(request.httpResponse)
+    request.processed = true
+  }
 }
 
 case class RxHttpErrorResponse(errorCode: Int, message: String, override val request : RxHttpRequest) extends RxHttpResponse(request) {
@@ -15,9 +18,13 @@ case class RxHttpErrorResponse(errorCode: Int, message: String, override val req
 }
 
 case class RxHttpOkResponse(body : String, override val request : RxHttpRequest) extends RxHttpResponse(request) {
+  def this(request : RxHttpRequest) = this(null, request)
+
   protected def render(httpResponse: HttpServletResponse) = {
     httpResponse.setStatus(200)
-    httpResponse.getOutputStream.print(body)
+    if (body != null) {
+      httpResponse.getOutputStream.print(body)
+    }
   }
 }
 case class RxHttpRedirectResponse(url: String, override val request : RxHttpRequest) extends RxHttpResponse(request) {
@@ -26,4 +33,5 @@ case class RxHttpRedirectResponse(url: String, override val request : RxHttpRequ
 
 object RxHttpResponse {
   def ok[Event <: RxHttpRequest](body : String) : Transformer[Event, RxHttpResponse] = Transformer.map((evt: Event) => new RxHttpOkResponse(body, evt))
+  def ok[Event <: RxHttpRequest]() : Transformer[Event, RxHttpResponse] = Transformer.map((evt: Event) => new RxHttpOkResponse(evt))
 }

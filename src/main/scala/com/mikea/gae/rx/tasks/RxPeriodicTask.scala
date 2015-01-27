@@ -43,7 +43,7 @@ object RxPeriodicTask {
       RxTask(payload = payload, name = Some(payload.name))
     })
 
-    Subject.combine(observable, observer)
+    Subject.combine(observer, observable)
   }
 
   private def computeContinuation[S, T : TypeTag](task: RxTask[RxPeriodicTaskPayload[T]], strategy : RescheduleStrategy[S], s : S) : Option[RxTask[RxPeriodicTaskPayload[T]]] = {

@@ -12,9 +12,8 @@ import com.mikea.gae.rx.base._
 import scala.concurrent.duration.Duration
 import com.mikea.gae.rx.impl.RxUrls
 import com.twitter.bijection.Bijection
-import com.mikea.gae.rx.events.RxHttpRequest
-import com.mikea.gae.rx.base.Transformer
-import com.mikea.gae.rx.Rx
+import com.mikea.gae.rx.events.{RxTaskEvent, RxHttpRequest}
+import com.mikea.gae.rx.{RxHttpResponse, Rx}
 
 /**
  * @author mike.aizatsky@gmail.com
@@ -52,24 +51,27 @@ object RxTask {
   }
 
   def failFast[T](subject: Subject[RxTask[T]]) : Subject[RxTask[T]] = {
-    Subject.combine(
-      subject,
-      failFast(subject.asInstanceOf[Observer[RxTask[T]]]))
+    Subject.combine(failFast(subject.asInstanceOf[Observer[RxTask[T]]]),
+                     subject)
   }
 
   private def tasksObserver[T](queue : Observer[TaskOptions]): Observer[RxTask[T]] = {
     queue.unmap((task: RxTask[T]) => task.asTaskOptions())
   }
 
-  private def tasksObservable[T](observable : Observable[RxHttpRequest]): Observable[RxTask[T]] = {
-    observable.map((event: RxHttpRequest) => RxTask.fromRequest(event.httpRequest))
+  private def tasksObservable[T](allRequests : Observable[RxTaskEvent]): Observable[RxTask[T]] = {
+    allRequests.map((event: RxTaskEvent) => RxTask.fromRequest(event.httpRequest))
   }
 
-  private[rx] def tasks[T](queue : Transformer[TaskOptions, RxHttpRequest]): Subject[RxTask[T]] = {
-    Subject.combine(tasksObservable(queue), tasksObserver(queue))
-  }
+  def tasks[T](queueName: String)(implicit rx : Rx) : Subject[RxTask[T]] =  {
+    val taskqueue: TransformerSlot[RxTaskEvent, RxHttpResponse] = rx.taskqueue(queueName)
+    val enqueue: Observer[TaskOptions] = rx.enqueue(queueName)
+    
+    // todo: Shouldn't actually always connect to ok. should send errors as well. 
+    taskqueue.connect(RxHttpResponse.ok())
 
-  def tasks[T](queueName: String)(implicit rx : Rx) : Subject[RxTask[T]] = tasks(rx.taskqueue(queueName))
+    Subject.combine(tasksObserver(enqueue), tasksObservable(taskqueue))
+  }
 
   // todo this factory stuff doesn't look neat, find a better representation
   def tasksFactory(queueName: String)(implicit rx : Rx) : SubjectFactory[RxTask] = new SubjectFactory[RxTask] {
@@ -93,12 +95,12 @@ object RxTask {
   implicit def asRxTaskObserverHelper[T <: Serializable : TypeTag](observer : Observer[RxTask[T]]) = new RxTaskObserverHelper[T](observer)
 
   class RxTaskSubjectHelper[T <: Serializable : TypeTag](subject : Subject[RxTask[T]]) {
-    def mapPayload[S <: Serializable : TypeTag](fn : Bijection[T, S]) : Subject[RxTask[S]] = subject.map(Bijection.build[RxTask[T], RxTask[S]](_.map(fn))(_.map(fn.invert)))
+    def mapPayload[S <: Serializable : TypeTag](fn : Bijection[T, S]) : Subject[RxTask[S]] = subject.bimap(Bijection.build[RxTask[T], RxTask[S]](_.map(fn))(_.map(fn.invert)))
   }
 
   implicit def RxTaskSubjectHelper[T <: Serializable : TypeTag](subject : Subject[RxTask[T]]) = new RxTaskSubjectHelper[T](subject)
 
-  def throughTasks[T](subjects : SubjectFactory[RxTask]) = subjects.through(RxTask.payloadBijection[T]())
+  def throughTasks[T](subjects : SubjectFactory[RxTask]): Subject[T] = subjects.through(RxTask.payloadBijection[T]())
 }
 
 case class RxTask[T](payload: T,

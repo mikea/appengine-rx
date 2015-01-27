@@ -57,6 +57,8 @@ trait Transformer[-In, +Out] extends Observer[In] with Observable[Out] {
 
   def map[NewIn, NewOut](mapInFn : NewIn => In, mapOutFn: Out => NewOut) : Transformer[NewIn, NewOut] = Transformer.combine(this.unmap(mapInFn), this.map(mapOutFn))
 
+  override def filter(predicate: (Out) => Boolean): Transformer[In, Out] = Transformer.combine(this, super.filter(predicate))
+
   def >>>[NewOut](t : Transformer[Out, NewOut]) : Transformer[In, NewOut] = {
     // todo: should this be possible without subscription, i.e. without side effect?
     this.subscribe(t)  // todo: dispose?
