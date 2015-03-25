@@ -1,19 +1,21 @@
 package com.mikea.gae.rx.tasks
 
-import com.google.common.base.Objects
-import javax.servlet.http.HttpServletRequest
 import java.io._
-import resource._
-import com.google.appengine.api.taskqueue.TaskOptions
-import scala.reflect.runtime.universe._
-import scala.collection.immutable.HashMap
 import java.util.regex.Pattern
+import javax.servlet.http.HttpServletRequest
+
+import com.google.appengine.api.taskqueue.TaskOptions
+import com.google.common.base.Objects
 import com.mikea.gae.rx.base._
-import scala.concurrent.duration.Duration
+import com.mikea.gae.rx.events.RxTaskEvent
 import com.mikea.gae.rx.impl.RxUrls
+import com.mikea.gae.rx.{Rx, RxHttpResponse}
 import com.twitter.bijection.Bijection
-import com.mikea.gae.rx.events.{RxTaskEvent, RxHttpRequest}
-import com.mikea.gae.rx.{RxHttpResponse, Rx}
+import resource._
+
+import scala.collection.immutable.HashMap
+import scala.concurrent.duration.Duration
+import scala.reflect.runtime.universe._
 
 /**
  * @author mike.aizatsky@gmail.com
